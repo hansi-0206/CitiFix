@@ -9,13 +9,7 @@ import { analyzeIssueWithAI } from "../services/geminiService.js";
 export const checkDuplicateIssue = async (req, res) => {
   const { latitude, longitude, category } = req.body;
 
-  console.log("--- DUPLICATE DETECTION API CALLED ---");
-  console.log("Latitude received:", latitude);
-  console.log("Longitude received:", longitude);
-  console.log("Category received:", category);
-
   if (!latitude || !longitude || !category) {
-    console.log("Duplicate check stopped: missing parameters.");
     return res.status(400).json({ message: "Latitude, longitude and category are required" });
   }
 
@@ -36,11 +30,8 @@ export const checkDuplicateIssue = async (req, res) => {
         },
       },
     };
-    console.log("MongoDB Query:", JSON.stringify(query, null, 2));
 
     const duplicate = await Issue.findOne(query).populate("reportedBy", "name points badge");
-    console.log("MongoDB Query Result:", duplicate);
-    console.log("Duplicate Found:", !!duplicate);
 
     if (duplicate) {
       return res.json({
@@ -66,7 +57,6 @@ export const analyzeIssue = async (req, res) => {
     }
     const { description } = req.body;
 
-    console.log("Analyzing issue with Gemini AI...");
     const aiInference = await analyzeIssueWithAI(
       description || "",
       req.file.buffer,
@@ -135,32 +125,24 @@ export const createIssue = async (req, res) => {
           },
         },
       };
-      console.log("Create Issue Duplicate Query:", JSON.stringify(query, null, 2));
 
       const duplicate = await Issue.findOne(query);
-      console.log("Create Issue Duplicate Query Result:", duplicate);
-      console.log("Duplicate Found in Create:", !!duplicate);
 
       if (duplicate) {
-        console.log("Duplicate found! Stopping execution, not saving.");
         return res.status(409).json({
           duplicateFound: true,
           message: "Similar issue detected nearby. Choose to upvote that or bypass.",
           existingIssueId: duplicate._id,
         });
       }
-    } else {
-      console.log("Duplicate check bypassed by user parameter.");
     }
 
     // 3. Upload image buffer to Cloudinary
-    console.log("Uploading file to Cloudinary...");
     const imageUrl = await uploadToCloudinary(req.file.buffer);
 
     // 4. Run Gemini AI classification on the uploaded file + description, or use pre-analyzed payload
     let aiInference;
     if (aiCategory && aiSeverity && aiPriorityScore) {
-      console.log("Using pre-analyzed Gemini AI payload...");
       aiInference = {
         category: aiCategory,
         severity: aiSeverity,
@@ -170,7 +152,6 @@ export const createIssue = async (req, res) => {
         summary: aiSummary,
       };
     } else {
-      console.log("Executing Gemini AI Classification...");
       aiInference = await analyzeIssueWithAI(
         description,
         req.file.buffer,

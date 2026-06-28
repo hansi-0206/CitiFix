@@ -99,9 +99,13 @@ export const AppProvider = ({ children }) => {
     try {
       const data = await workOrdersAPI.createWorkOrder(workOrderData);
       await fetchWorkOrders();
+      await fetchIssues();
       return data;
     } catch (error) {
-      throw new Error(error.response?.data?.message || "Error creating work order");
+      const customErr = new Error(error.response?.data?.message || "Error creating work order");
+      customErr.status = error.response?.status;
+      customErr.data = error.response?.data;
+      throw customErr;
     }
   };
 
@@ -251,6 +255,25 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Update work order status
+  const updateWorkOrderStatus = async (workOrderId, targetStatus) => {
+    console.log("[FRONTEND REQUEST LOGS] - updateWorkOrderStatus");
+    console.log("-> Work Order ID:", workOrderId);
+    console.log("-> Requested Status:", targetStatus);
+    console.log("-> API Endpoint:", `/api/workorders/${workOrderId}/status`);
+    console.log("-> Request Body:", JSON.stringify({ status: targetStatus }));
+    try {
+      const data = await workOrdersAPI.updateStatus(workOrderId, targetStatus);
+      await fetchWorkOrders();
+      await fetchIssues();
+      await fetchUserProfile();
+      return data;
+    } catch (error) {
+      console.error("Error updating work order status:", error);
+      throw error;
+    }
+  };
+
   // Get metrics for dashboard
   const getMetrics = () => {
     const total = issues.length;
@@ -282,6 +305,7 @@ export const AppProvider = ({ children }) => {
         checkForDuplicate,
         resolveIssue,
         confirmResolved,
+        updateWorkOrderStatus,
         getMetrics,
         createWorkOrder,
         refreshDashboard: async () => {

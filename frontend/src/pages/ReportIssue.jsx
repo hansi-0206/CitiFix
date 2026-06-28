@@ -9,6 +9,13 @@ export default function ReportIssue() {
   const { reportIssue, checkForDuplicate, upvoteIssue, analyzeIssue } = useApp();
   const navigate = useNavigate();
 
+  const [toast, setToast] = useState({ show: false, message: "" });
+
+  const showToast = (message) => {
+    setToast({ show: true, message });
+    setTimeout(() => setToast({ show: false, message: "" }), 3000);
+  };
+
   // Form State
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Road Damage");
@@ -22,6 +29,7 @@ export default function ReportIssue() {
 
   // AI & Scanning State
   const [isScanning, setIsScanning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState({
     category: "",
     severity: "",
@@ -145,7 +153,7 @@ export default function ReportIssue() {
   // Detect user's current GPS location and geocode
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
+      showToast("Geolocation is not supported by your browser.");
       return;
     }
 
@@ -180,7 +188,7 @@ export default function ReportIssue() {
       },
       (error) => {
         console.error("Geolocation capture error:", error);
-        alert(`Failed to retrieve current location: ${error.message}`);
+        showToast(`Failed to retrieve current location: ${error.message}`);
       }
     );
   };
@@ -219,16 +227,16 @@ export default function ReportIssue() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!description) {
-      alert("Please enter a description.");
+      showToast("Please enter a description.");
       return;
     }
     if (!image) {
-      alert("Please select and upload an issue photo snapshot.");
+      showToast("Please select and upload an issue photo snapshot.");
       return;
     }
 
     try {
-      setIsScanning(true);
+      setIsSubmitting(true);
       const formData = new FormData();
       formData.append("title", title || `${category} Anomaly`);
       formData.append("category", category);
@@ -252,11 +260,21 @@ export default function ReportIssue() {
       }
 
       await reportIssue(formData);
-      setIsScanning(false);
+      setIsSubmitting(false);
       navigate("/feed");
     } catch (error) {
-      setIsScanning(false);
-      alert(error.message || "Failed to submit report. Please check backend log.");
+      setIsSubmitting(false);
+      let friendlyMessage = error.message || "Failed to submit report. Please check backend log.";
+      if (error.message?.includes("500") || error.message?.includes("Internal Server Error")) {
+        friendlyMessage = "Something went wrong while submitting your report. Please try again.";
+      } else if (error.message?.includes("api_key") || error.message?.includes("Cloudinary")) {
+        friendlyMessage = "Image upload service is temporarily unavailable. Please try again in a few moments.";
+      } else if (error.message?.includes("Network Error") || error.message?.includes("Network")) {
+        friendlyMessage = "Unable to connect to the server. Check your internet connection.";
+      } else if (error.message?.includes("Duplicate") || error.status === 409) {
+        friendlyMessage = "Duplicate issue already exists nearby.";
+      }
+      showToast(friendlyMessage);
     }
   };
 
@@ -320,7 +338,8 @@ export default function ReportIssue() {
                   type="file"
                   accept="image/*"
                   onChange={handleImageChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={isScanning || isSubmitting}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 />
                 <Upload className="h-8 w-8 text-slate-400 mb-3" />
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Drag &amp; drop an image here</p>
@@ -334,8 +353,9 @@ export default function ReportIssue() {
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                     <button
                       type="button"
+                      disabled={isScanning || isSubmitting}
                       onClick={() => { setImage(null); setImagePreview(""); }}
-                      className="absolute top-2 right-2 bg-slate-950/80 hover:bg-slate-900 text-white rounded-lg p-1.5 text-[10px] font-bold"
+                      className="absolute top-2 right-2 bg-slate-950/80 hover:bg-slate-900 text-white rounded-lg p-1.5 text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Remove
                     </button>
@@ -358,8 +378,9 @@ export default function ReportIssue() {
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Category</label>
                 <select
                   value={category}
+                  disabled={isScanning || isSubmitting}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="block w-full px-4 py-3 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
+                  className="block w-full px-4 py-3 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="Road Damage">Road Damage (Potholes, cracks)</option>
                   <option value="Waste Management">Waste Management (Trash, dumping)</option>
@@ -376,9 +397,10 @@ export default function ReportIssue() {
                 <input
                   type="text"
                   value={title}
+                  disabled={isScanning || isSubmitting}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Deep pothole near crossroads"
-                  className="block w-full px-4 py-3 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
+                  className="block w-full px-4 py-3 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -388,11 +410,12 @@ export default function ReportIssue() {
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Description</label>
               <textarea
                 value={description}
+                disabled={isScanning || isSubmitting}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 required
                 placeholder="Describe the issue in detail, including potential hazards, landmarks, and approximate duration..."
-                className="block w-full px-4 py-3 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors resize-none"
+                className="block w-full px-4 py-3 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -405,8 +428,9 @@ export default function ReportIssue() {
                 </span>
                 <button
                   type="button"
+                  disabled={isScanning || isSubmitting}
                   onClick={handleUseCurrentLocation}
-                  className="px-3 py-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                  className="px-3 py-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   📍 Use My Current Location
                 </button>
@@ -417,8 +441,9 @@ export default function ReportIssue() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Location Spot</label>
                   <select
                     value={selectedSpot}
+                    disabled={isScanning || isSubmitting}
                     onChange={handleSpotChange}
-                    className="block w-full h-14 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors"
+                    className="block w-full h-14 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {Object.entries(locationSpots).map(([key, value]) => (
                       <option 
@@ -437,7 +462,7 @@ export default function ReportIssue() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      disabled={selectedSpot !== "spot-new"}
+                      disabled={selectedSpot !== "spot-new" || isScanning || isSubmitting}
                       value={customLat}
                       onChange={(e) => setCustomLat(e.target.value)}
                       placeholder="Lat"
@@ -445,7 +470,7 @@ export default function ReportIssue() {
                     />
                     <input
                       type="text"
-                      disabled={selectedSpot !== "spot-new"}
+                      disabled={selectedSpot !== "spot-new" || isScanning || isSubmitting}
                       value={customLng}
                       onChange={(e) => setCustomLng(e.target.value)}
                       placeholder="Lng"
@@ -459,7 +484,7 @@ export default function ReportIssue() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Address Details</label>
                 <input
                   type="text"
-                  disabled={selectedSpot !== "spot-new"}
+                  disabled={selectedSpot !== "spot-new" || isScanning || isSubmitting}
                   value={customAddress}
                   onChange={(e) => setCustomAddress(e.target.value)}
                   placeholder="Street Address..."
@@ -500,17 +525,18 @@ export default function ReportIssue() {
               <div className="flex gap-3">
                 <button
                   type="button"
+                  disabled={isScanning || isSubmitting}
                   onClick={() => navigate(-1)}
-                  className="flex-1 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors"
+                  className="flex-1 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isScanning}
+                  disabled={isScanning || isSubmitting}
                   className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md transition-all pt-3 pb-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {isScanning ? "Submitting..." : "Submit Civic Ticket"}
+                  {isSubmitting ? "Submitting civic report..." : isScanning ? "AI is inspecting your report..." : "Submit Civic Ticket"}
                 </button>
               </div>
             )}
@@ -532,6 +558,19 @@ export default function ReportIssue() {
           </div>
         </div>
       </div>
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-5 right-5 z-[60] flex items-center gap-2.5 px-4.5 py-3.5 bg-slate-900 text-white dark:bg-white dark:text-slate-955 rounded-2xl shadow-2xl border border-slate-805 dark:border-slate-200"
+          >
+            <span className="text-xs font-black tracking-wide">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

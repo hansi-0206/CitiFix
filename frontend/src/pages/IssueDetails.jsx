@@ -6,17 +6,37 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function IssueDetails() {
   const { id } = useParams();
-  const { issues, upvoteIssue, resolveIssue, currentUser, workOrders, createWorkOrder, confirmResolved } = useApp();
+  const { 
+    issues, 
+    upvoteIssue, 
+    resolveIssue, 
+    currentUser, 
+    workOrders, 
+    createWorkOrder, 
+    confirmResolved,
+    updateWorkOrderStatus 
+  } = useApp();
   const navigate = useNavigate();
 
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [isCreatingWorkOrder, setIsCreatingWorkOrder] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: "", type: "success" });
+    }, 3000);
+  };
 
   const issue = issues.find((i) => i.id === id);
-
-  const workOrderExists = workOrders?.some((wo) => wo.issueId === issue?.id);
+  const workOrder = workOrders?.find((wo) => wo.issueId === issue?.id);
+  const workOrderExists = !!workOrder;
 
   const handleCreateWorkOrder = async () => {
     try {
+      setIsCreatingWorkOrder(true);
       let assignedDepartment = "Municipal Public Works";
       if (issue.category === "Waste Management") assignedDepartment = "Sanitation & Waste Cleanups";
       if (issue.category === "Streetlight Failures") assignedDepartment = "Electrical Grid Maintenance";
@@ -31,9 +51,59 @@ export default function IssueDetails() {
         assignedDepartment,
         recommendation: issue.recommendedAction || "Inspect and resolve issue.",
       });
-      alert("✓ Work Order Created Successfully!");
+      setIsCreatingWorkOrder(false);
+      showToast("✓ Work Order Created Successfully");
     } catch (error) {
-      alert(error.message || "Failed to create work order.");
+      setIsCreatingWorkOrder(false);
+      if (error.status === 409) {
+        setIsModalOpen(true);
+        showToast("Work order already exists.", "info");
+      } else {
+        showToast("Unable to create work order.", "error");
+      }
+    }
+  };
+
+  const handleUpvote = async () => {
+    try {
+      await upvoteIssue(issue.id);
+      showToast("✓ Support Registered Successfully");
+    } catch (err) {
+      showToast("Unable to support report.", "error");
+    }
+  };
+
+  const handleConfirmResolved = async () => {
+    try {
+      await confirmResolved(issue.id);
+      showToast("✓ Resolution Confirmed Successfully");
+    } catch (err) {
+      showToast("Unable to confirm resolution.", "error");
+    }
+  };
+
+  const handleResolveIssue = async (targetStatus) => {
+    try {
+      await resolveIssue(issue.id, targetStatus);
+      if (targetStatus === "Resolved") {
+        showToast("✓ Issue Marked as Resolved");
+      } else {
+        showToast(`✓ Issue Status Updated to ${targetStatus}`);
+      }
+    } catch (err) {
+      showToast("Unable to update status.", "error");
+    }
+  };
+
+  const handleUpdateWorkOrderStatus = async (status) => {
+    try {
+      await updateWorkOrderStatus(workOrder._id || workOrder.id, status);
+      showToast("✓ Work Order Updated Successfully");
+      if (status === "Resolved") {
+        showToast("✓ Issue Marked as Resolved");
+      }
+    } catch (err) {
+      showToast("Unable to update work order.", "error");
     }
   };
 
@@ -94,7 +164,45 @@ export default function IssueDetails() {
     }
   };
 
-  const currentStep = getTimelineStepIndex(issue.status);
+  const getCitizenStepIndex = (status) => {
+    switch (status?.toLowerCase()) {
+      case "resolved": return 4;
+      case "pending verification": return 3;
+      case "in progress": return 3;
+      case "work order created": return 2;
+      case "under review": return 1;
+      default: return 0;
+    }
+  };
+
+  const getDepartmentName = (cat) => {
+    const categoryMapping = {
+      "Road Damage": "Public Works",
+      "Streetlight Failures": "Electrical Department",
+      "Waste Management": "Sanitation",
+      "Water Supply": "Water Department",
+      "Public Facilities": "Parks & Recreation",
+      "Utility Failures": "Utility Services",
+    };
+    return categoryMapping[cat] || "Public Works";
+  };
+
+  const isCitizen = currentUser?.role === "Citizen";
+
+  const stepsToShow = isCitizen ? [
+    { title: "Reported", desc: "Validated by AI coprocessor engine." },
+    { title: "Under Review", desc: "Municipal team reviewing details." },
+    { title: "Work Order Created", desc: "Work order assigned to department." },
+    { title: "In Progress", desc: "Crews dispatched conducting repairs." },
+    { title: "Resolved", desc: "Case successfully closed." }
+  ] : [
+    { title: "Reported", desc: "Validated by AI coprocessor engine." },
+    { title: "In Progress", desc: "Crews dispatched conducting repairs." },
+    { title: "Pending Verification", desc: "Citizens confirm resolution to close ticket." },
+    { title: "Resolved", desc: "Case successfully closed." }
+  ];
+
+  const currentStepIndex = isCitizen ? getCitizenStepIndex(issue?.status) : getTimelineStepIndex(issue?.status);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 transition-colors duration-300">
@@ -154,7 +262,7 @@ export default function IssueDetails() {
                 <div className="flex gap-3">
                   {/* Upvote */}
                   <button
-                    onClick={() => upvoteIssue(issue.id)}
+                    onClick={handleUpvote}
                     className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-350 transition-colors"
                   >
                     <ThumbsUp className="h-3.5 w-3.5" />
@@ -247,53 +355,81 @@ export default function IssueDetails() {
               </div>
               
               <div className="flex flex-wrap gap-2">
-                {/* 1. CITIZEN PERMISSIONS: Confirm Resolution */}
-                {currentUser?.role === "Citizen" && issue.status === "Pending Verification" && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      Confirmations: {issue.confirmations?.length || 0} / 3
-                    </span>
-                    {issue.confirmations?.includes(currentUser.id) ? (
+                {/* 1. CITIZEN PERMISSIONS */}
+                {currentUser?.role === "Citizen" && (
+                  <div className="flex flex-col gap-3">
+                    {workOrderExists && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                          ✓ Work Order Created
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsModalOpen(true)}
+                          className="px-3 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                        >
+                          View Progress
+                        </button>
+                      </div>
+                    )}
+ 
+                    {issue.status === "Pending Verification" && (
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                          Confirmations: {issue.confirmations?.length || 0} / 3
+                        </span>
+                        {issue.confirmations?.includes(currentUser.id) ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs rounded-xl border border-emerald-500/20 cursor-not-allowed"
+                          >
+                            ✓ Confirmed Resolution
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleConfirmResolved}
+                            className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-500/10 cursor-pointer transition-all"
+                          >
+                            ✓ Confirm Issue Resolved
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* 2. MUNICIPAL OFFICER ACTIONS */}
+                {(currentUser?.role === "Officer" || currentUser?.role === "Municipal Officer") && (
+                  <div className="flex flex-wrap gap-2">
+                    {workOrderExists ? (
                       <button
                         type="button"
-                        disabled
-                        className="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs rounded-xl border border-emerald-500/20 cursor-not-allowed"
+                        onClick={() => setIsModalOpen(true)}
+                        className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
                       >
-                        ✓ Confirmed Resolution
+                        View Work Order
                       </button>
                     ) : (
                       <button
                         type="button"
-                        onClick={() => confirmResolved(issue.id)}
-                        className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-500/10 cursor-pointer transition-all"
+                        disabled={isCreatingWorkOrder}
+                        onClick={handleCreateWorkOrder}
+                        className={`px-3 py-1.5 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer ${
+                          isCreatingWorkOrder
+                            ? "bg-slate-200 dark:bg-slate-800 text-slate-455 dark:text-slate-650 cursor-not-allowed"
+                            : "bg-slate-955 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-955 dark:hover:bg-slate-100"
+                        }`}
                       >
-                        ✓ Confirm Issue Resolved
+                        {isCreatingWorkOrder ? "Creating Work Order..." : "Create Work Order"}
                       </button>
                     )}
-                  </div>
-                )}
-
-                {/* 2. MUNICIPAL OFFICER ACTIONS */}
-                {(currentUser?.role === "Officer" || currentUser?.role === "Municipal Officer") && (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={workOrderExists}
-                      onClick={handleCreateWorkOrder}
-                      className={`px-3 py-1.5 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer ${
-                        workOrderExists
-                          ? "bg-slate-200 dark:bg-slate-800 text-slate-455 dark:text-slate-650 cursor-not-allowed"
-                          : "bg-slate-950 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-955 dark:hover:bg-slate-100"
-                      }`}
-                    >
-                      {workOrderExists ? "Work Order Exists" : "Create Work Order"}
-                    </button>
 
                     {issue.status === "Reported" && (
                       <button
                         type="button"
-                        onClick={() => resolveIssue(issue.id, "In Progress")}
-                        className="px-3 py-1.5 bg-blue-500 hover:bg-blue-650 text-white font-bold text-xs rounded-xl cursor-pointer"
+                        onClick={() => handleResolveIssue("In Progress")}
+                        className="px-3 py-1.5 bg-blue-500 hover:bg-blue-655 text-white font-bold text-xs rounded-xl cursor-pointer"
                       >
                         Move to In Progress
                       </button>
@@ -302,8 +438,8 @@ export default function IssueDetails() {
                     {issue.status === "In Progress" && (
                       <button
                         type="button"
-                        onClick={() => resolveIssue(issue.id, "Pending Verification")}
-                        className="px-3 py-1.5 bg-amber-505 hover:bg-amber-600 text-white font-bold text-xs rounded-xl cursor-pointer"
+                        onClick={() => handleResolveIssue("Pending Verification")}
+                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl cursor-pointer"
                       >
                         Move to Pending Verification
                       </button>
@@ -314,56 +450,66 @@ export default function IssueDetails() {
                 {/* 3. ADMIN ACTIONS */}
                 {currentUser?.role === "Admin" && (
                   <div className="flex flex-wrap gap-2 items-center">
-                    <button
-                      type="button"
-                      disabled={workOrderExists}
-                      onClick={handleCreateWorkOrder}
-                      className={`px-3 py-1.5 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer ${
-                        workOrderExists
-                          ? "bg-slate-200 dark:bg-slate-800 text-slate-455 dark:text-slate-650 cursor-not-allowed"
-                          : "bg-slate-955 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-955 dark:hover:bg-slate-100"
-                      }`}
-                    >
-                      {workOrderExists ? "Work Order Exists" : "Create Work Order"}
-                    </button>
-
+                    {workOrderExists ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(true)}
+                        className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+                      >
+                        View Work Order
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isCreatingWorkOrder}
+                        onClick={handleCreateWorkOrder}
+                        className={`px-3 py-1.5 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer ${
+                          isCreatingWorkOrder
+                            ? "bg-slate-200 dark:bg-slate-800 text-slate-455 dark:text-slate-650 cursor-not-allowed"
+                            : "bg-slate-950 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-955 dark:hover:bg-slate-100"
+                        }`}
+                      >
+                        {isCreatingWorkOrder ? "Creating Work Order..." : "Create Work Order"}
+                      </button>
+                    )}
+ 
                     <span className="text-[10px] font-bold text-slate-400 uppercase mr-1">Admin Overrides:</span>
                     
                     {issue.status !== "In Progress" && (
                       <button
                         type="button"
-                        onClick={() => resolveIssue(issue.id, "In Progress")}
-                        className="px-2.5 py-1.5 bg-blue-500 hover:bg-blue-650 text-white font-bold text-[10px] rounded-lg cursor-pointer"
+                        onClick={() => handleResolveIssue("In Progress")}
+                        className="px-2.5 py-1.5 bg-blue-500 hover:bg-blue-655 text-white font-bold text-[10px] rounded-lg cursor-pointer"
                       >
                         In Progress
                       </button>
                     )}
-
+ 
                     {issue.status !== "Pending Verification" && (
                       <button
                         type="button"
-                        onClick={() => resolveIssue(issue.id, "Pending Verification")}
-                        className="px-2.5 py-1.5 bg-amber-505 hover:bg-amber-600 text-white font-bold text-[10px] rounded-lg cursor-pointer"
+                        onClick={() => handleResolveIssue("Pending Verification")}
+                        className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] rounded-lg cursor-pointer"
                       >
                         Pending Verification
                       </button>
                     )}
-
+ 
                     {issue.status !== "Resolved" && (
                       <button
                         type="button"
-                        onClick={() => resolveIssue(issue.id, "Resolved")}
+                        onClick={() => handleResolveIssue("Resolved")}
                         className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-650 text-white font-bold text-[10px] rounded-lg cursor-pointer"
                       >
                         Resolve
                       </button>
                     )}
-
+ 
                     {issue.status === "Resolved" && (
                       <button
                         type="button"
-                        onClick={() => resolveIssue(issue.id, "Reported")}
-                        className="px-2.5 py-1.5 bg-rose-500 hover:bg-rose-605 text-white font-bold text-[10px] rounded-lg cursor-pointer"
+                        onClick={() => handleResolveIssue("Reported")}
+                        className="px-2.5 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] rounded-lg cursor-pointer"
                       >
                         Reopen Issue
                       </button>
@@ -375,50 +521,23 @@ export default function IssueDetails() {
 
             {/* Custom SVG/CSS timeline node sequence */}
             <div className="relative pl-6 space-y-6 border-l-2 border-slate-200 dark:border-slate-800">
-              
-              {/* Step 1: Reported */}
-              <div className="relative">
-                <div className={`absolute -left-[31px] top-0.5 h-4 w-4 rounded-full border-2 bg-white dark:bg-dark-950 ${
-                  currentStep >= 0 ? "border-sky-500 bg-sky-500 dark:bg-sky-500" : "border-slate-200 dark:border-slate-800"
-                }`}></div>
-                <div className="space-y-0.5">
-                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">Issue Reported</h5>
-                  <p className="text-[10px] text-slate-400">Validated by AI coprocessor engine.</p>
-                </div>
-              </div>
-
-              {/* Step 2: In Progress */}
-              <div className="relative">
-                <div className={`absolute -left-[31px] top-0.5 h-4 w-4 rounded-full border-2 bg-white dark:bg-dark-950 ${
-                  currentStep >= 1 ? "border-sky-500 bg-sky-500 dark:bg-sky-500" : "border-slate-200 dark:border-slate-800"
-                }`}></div>
-                <div className="space-y-0.5">
-                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">In Progress</h5>
-                  <p className="text-[10px] text-slate-400">Crews dispatched on-site conducting repairs.</p>
-                </div>
-              </div>
-
-              {/* Step 3: Pending Verification */}
-              <div className="relative">
-                <div className={`absolute -left-[31px] top-0.5 h-4 w-4 rounded-full border-2 bg-white dark:bg-dark-950 ${
-                  currentStep >= 2 ? "border-sky-500 bg-sky-500 dark:bg-sky-500" : "border-slate-200 dark:border-slate-800"
-                }`}></div>
-                <div className="space-y-0.5">
-                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">Pending Verification</h5>
-                  <p className="text-[10px] text-slate-400">Citizens confirm resolution to close ticket.</p>
-                </div>
-              </div>
-
-              {/* Step 4: Resolved */}
-              <div className="relative">
-                <div className={`absolute -left-[31px] top-0.5 h-4 w-4 rounded-full border-2 bg-white dark:bg-dark-950 ${
-                  currentStep >= 3 ? "border-emerald-500 bg-emerald-500 dark:bg-emerald-500" : "border-slate-200 dark:border-slate-800"
-                }`}></div>
-                <div className="space-y-0.5">
-                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">Resolved Case</h5>
-                  <p className="text-[10px] text-slate-400">Resolution successfully verified by community audits.</p>
-                </div>
-              </div>
+              {stepsToShow.map((step, idx) => {
+                const isActive = currentStepIndex >= idx;
+                const isFinal = idx === stepsToShow.length - 1;
+                return (
+                  <div key={idx} className="relative">
+                    <div className={`absolute -left-[31px] top-0.5 h-4 w-4 rounded-full border-2 bg-white dark:bg-dark-950 ${
+                      isActive 
+                        ? (isFinal ? "border-emerald-500 bg-emerald-500 dark:bg-emerald-500" : "border-sky-500 bg-sky-500 dark:bg-sky-500") 
+                        : "border-slate-200 dark:border-slate-800"
+                    }`}></div>
+                    <div className="space-y-0.5">
+                      <h5 className="text-xs font-bold text-slate-900 dark:text-white">{step.title}</h5>
+                      <p className="text-[10px] text-slate-400">{step.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -496,6 +615,190 @@ export default function IssueDetails() {
           </div>
         </div>
       </div>
+
+      {/* Work Order Details / Progress Modal */}
+      <AnimatePresence>
+        {isModalOpen && workOrder && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            ></motion.div>
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                    {currentUser?.role === "Citizen" ? "Work Order Progress" : "Work Order Management"}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                    WO-ID: {workOrder._id || workOrder.id}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="h-8 w-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="p-6 overflow-y-auto space-y-6 text-sm font-medium">
+                {/* Linked Issue Title & Category */}
+                <div className="flex gap-4 items-center p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/25 dark:border-slate-800/40">
+                  <img
+                    src={issue.imageUrl}
+                    alt=""
+                    className="w-16 h-16 rounded-xl object-cover border border-slate-200/20 shrink-0"
+                  />
+                  <div>
+                    <span className="text-[10px] font-bold text-sky-500 uppercase tracking-wide">
+                      {issue.category}
+                    </span>
+                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-white line-clamp-1 mt-0.5">
+                      {issue.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                      {issue.location.address}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Assigned Department
+                    </span>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {getDepartmentName(issue.category)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Priority Level
+                    </span>
+                    <p className="text-xs font-bold text-rose-500 uppercase">
+                      {workOrder.priority || issue.severity}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Created Date
+                    </span>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-350">
+                      {new Date(workOrder.createdAt || Date.now()).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric"
+                      })}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Last Updated
+                    </span>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-350">
+                      {new Date(workOrder.updatedAt || Date.now()).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI Recommended Action */}
+                <div className="p-4 bg-sky-500/5 rounded-2xl border border-sky-500/10 space-y-1.5">
+                  <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider block">
+                    AI Recommended Action
+                  </span>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-semibold">
+                    {issue.recommendedAction || "Inspect and resolve issue."}
+                  </p>
+                </div>
+
+                {/* Status Section */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/20 dark:border-slate-800/40 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Current Status
+                    </span>
+                    <span className="inline-block mt-1.5 px-3 py-1 bg-sky-500/10 text-sky-500 font-black text-xs uppercase rounded-full tracking-wide">
+                      {workOrder.status}
+                    </span>
+                  </div>
+
+                  {/* Actions for Officers / Admins */}
+                  {currentUser?.role !== "Citizen" && workOrder.status !== "Resolved" && (
+                    <div className="flex gap-2">
+                      {workOrder.status === "Pending" && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateWorkOrderStatus("In Progress")}
+                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-650 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
+                        >
+                          Start Repair
+                        </button>
+                      )}
+                      {(workOrder.status === "Pending" || workOrder.status === "In Progress") && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateWorkOrderStatus("Completed")}
+                          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
+                        >
+                          Mark Completed
+                        </button>
+                      )}
+                      {workOrder.status !== "Resolved" && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateWorkOrderStatus("Resolved")}
+                          className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-650 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
+                        >
+                          Mark Resolved
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-5 right-5 z-[60] flex items-center gap-2.5 px-4.5 py-3.5 bg-slate-900 text-white dark:bg-white dark:text-slate-955 rounded-2xl shadow-2xl border border-slate-805 dark:border-slate-200"
+          >
+            <span className="text-xs font-black tracking-wide">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,17 +1,51 @@
-import React from "react";
+import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { useTheme } from "../context/ThemeContext";
 import StatsCard from "../components/StatsCard";
 import RecommendationCard from "../components/RecommendationCard";
 import { FileText, CheckCircle, AlertCircle, TrendingUp, Sparkles, BarChart3, PieChart as PieIcon, LineChart } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, AreaChart, Area, CartesianGrid } from "recharts";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CommunityImpactDashboard() {
-  const { issues, getMetrics, workOrders, createWorkOrder } = useApp();
+  const { issues, getMetrics, workOrders, createWorkOrder, updateWorkOrderStatus, isLoading } = useApp();
   const { theme } = useTheme();
+
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: "" });
+
+  const showToast = (message) => {
+    setToast({ show: true, message });
+    setTimeout(() => setToast({ show: false, message: "" }), 3000);
+  };
   
   const { total, active, resolved, rate } = getMetrics();
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-pulse">
+        <div className="space-y-2 text-center md:text-left">
+          <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-xl w-48 mx-auto md:mx-0"></div>
+          <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-96 mx-auto md:mx-0"></div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="h-28 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-3xl"></div>
+            <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-3xl"></div>
+          </div>
+          <div className="space-y-6">
+            <div className="h-96 bg-slate-200 dark:bg-slate-800 rounded-3xl"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Helper to calculate distance in meters
   const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -385,6 +419,10 @@ export default function CommunityImpactDashboard() {
                 recommendation={rec}
                 workOrders={workOrders}
                 onCreateWorkOrder={createWorkOrder}
+                onViewWorkOrder={(wo) => {
+                  setSelectedWorkOrder(wo);
+                  setIsModalOpen(true);
+                }}
               />
             ))
           ) : (
@@ -404,7 +442,14 @@ export default function CommunityImpactDashboard() {
         {workOrders.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {workOrders.map((wo) => (
-              <div key={wo._id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 dark:border-slate-850 dark:bg-slate-900/40 space-y-2">
+              <div
+                key={wo._id}
+                onClick={() => {
+                  setSelectedWorkOrder(wo);
+                  setIsModalOpen(true);
+                }}
+                className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 dark:border-slate-850 dark:bg-slate-900/40 space-y-2 cursor-pointer hover:border-sky-500/40 hover:bg-slate-100/50 dark:hover:bg-slate-900/80 transition-all duration-200"
+              >
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/10">
                     {wo.category}
@@ -416,7 +461,7 @@ export default function CommunityImpactDashboard() {
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
                   Assigned: {wo.assignedDepartment}
                 </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
                   {wo.recommendation}
                 </p>
                 <div className="text-[9px] text-slate-400 font-semibold uppercase pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between">
@@ -433,6 +478,224 @@ export default function CommunityImpactDashboard() {
         )}
       </div>
 
+      {/* Dynamic Work Order Details Modal */}
+      {(() => {
+        const activeWorkOrder = workOrders?.find((wo) => wo._id === selectedWorkOrder?._id);
+        const linkedIssue = activeWorkOrder ? issues?.find(
+          (i) => i.id === (activeWorkOrder.issueId?._id || activeWorkOrder.issueId?.id || activeWorkOrder.issueId)
+        ) : null;
+
+        const getDepartmentName = (cat) => {
+          const categoryMapping = {
+            "Road Damage": "Public Works",
+            "Streetlight Failures": "Electrical Department",
+            "Waste Management": "Sanitation",
+            "Water Supply": "Water Department",
+            "Public Facilities": "Parks & Recreation",
+            "Utility Failures": "Utility Services",
+          };
+          return categoryMapping[cat] || "Public Works";
+        };
+
+        const handleUpdateWorkOrderStatus = async (status) => {
+          try {
+            await updateWorkOrderStatus(activeWorkOrder._id, status);
+            showToast("✓ Work Order Updated Successfully");
+            if (status === "Resolved") {
+              showToast("✓ Issue Marked as Resolved");
+            }
+          } catch (err) {
+            showToast("Unable to update work order status.");
+          }
+        };
+
+        return (
+          <AnimatePresence>
+            {isModalOpen && activeWorkOrder && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsModalOpen(false)}
+                  className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                ></motion.div>
+
+                {/* Modal Body */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  className="relative w-full max-w-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
+                >
+                  {/* Header */}
+                  <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                        Work Order Management
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                        WO-ID: {activeWorkOrder._id}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="h-8 w-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Scrollable Content */}
+                  <div className="p-6 overflow-y-auto space-y-6 text-sm font-medium">
+                    {/* Linked Issue Details */}
+                    {linkedIssue && (
+                      <div className="flex gap-4 items-center p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/25 dark:border-slate-800/40">
+                        <img
+                          src={linkedIssue.imageUrl}
+                          alt=""
+                          className="w-16 h-16 rounded-xl object-cover border border-slate-200/20 shrink-0"
+                        />
+                        <div>
+                          <span className="text-[10px] font-bold text-sky-500 uppercase tracking-wide">
+                            {linkedIssue.category}
+                          </span>
+                          <h4 className="text-sm font-extrabold text-slate-900 dark:text-white line-clamp-1 mt-0.5">
+                            {linkedIssue.title}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                            {linkedIssue.location?.address}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Assigned Department
+                        </span>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                          {getDepartmentName(activeWorkOrder.category)}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Priority Level
+                        </span>
+                        <p className="text-xs font-bold text-rose-500 uppercase">
+                          {activeWorkOrder.priority}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Created Date
+                        </span>
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-350">
+                          {new Date(activeWorkOrder.createdAt || Date.now()).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric"
+                          })}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Last Updated
+                        </span>
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-350">
+                          {new Date(activeWorkOrder.updatedAt || Date.now()).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* AI Recommended Action */}
+                    <div className="p-4 bg-sky-500/5 rounded-2xl border border-sky-500/10 space-y-1.5">
+                      <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider block">
+                        AI Recommended Action
+                      </span>
+                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-semibold">
+                        {activeWorkOrder.recommendation || "Inspect and resolve issue."}
+                      </p>
+                    </div>
+
+                    {/* Status Section */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/20 dark:border-slate-800/40 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          Current Status
+                        </span>
+                        <span className="inline-block mt-1.5 px-3 py-1 bg-sky-500/10 text-sky-500 font-black text-xs uppercase rounded-full tracking-wide">
+                          {activeWorkOrder.status}
+                        </span>
+                      </div>
+
+                      {/* Actions for Officers / Admins */}
+                      {activeWorkOrder.status !== "Resolved" && (
+                        <div className="flex gap-2">
+                          {activeWorkOrder.status === "Pending" && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateWorkOrderStatus("In Progress")}
+                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-650 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
+                            >
+                              Start Repair
+                            </button>
+                          )}
+                          {(activeWorkOrder.status === "Pending" || activeWorkOrder.status === "In Progress") && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateWorkOrderStatus("Completed")}
+                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
+                            >
+                              Mark Completed
+                            </button>
+                          )}
+                          {activeWorkOrder.status !== "Resolved" && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateWorkOrderStatus("Resolved")}
+                              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-650 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
+                            >
+                              Mark Resolved
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+        );
+      })()}
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-5 right-5 z-[60] flex items-center gap-2.5 px-4.5 py-3.5 bg-slate-900 text-white dark:bg-white dark:text-slate-955 rounded-2xl shadow-2xl border border-slate-805 dark:border-slate-200"
+          >
+            <span className="text-xs font-black tracking-wide">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

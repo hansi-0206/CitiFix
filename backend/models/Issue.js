@@ -22,7 +22,7 @@ const issueSchema = new mongoose.Schema(
     status: {
       type: String,
       default: "Reported",
-      enum: ["Reported", "Verified", "Assigned", "In Progress", "Resolved"],
+      enum: ["Reported", "Under Review", "Work Order Created", "In Progress", "Pending Verification", "Resolved", "Verified", "Assigned"],
     },
     upvotes: [
       {

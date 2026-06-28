@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const workOrderSchema = new mongoose.Schema(
   {
+    title: {
+      type: String,
+      required: false,
+      default: "Work Order",
+      trim: true,
+    },
     issueId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Issue",
@@ -18,16 +24,23 @@ const workOrderSchema = new mongoose.Schema(
     },
     assignedDepartment: {
       type: String,
-      required: true,
+      default: "",
     },
     recommendation: {
       type: String,
-      required: true,
+      default: "",
+    },
+    assignedOfficer: {
+      type: String,
+      default: "",
     },
     status: {
       type: String,
       default: "Pending",
-      enum: ["Pending", "In Progress", "Completed"],
+      enum: ["Pending", "Assigned", "In Progress", "Completed", "Resolved"],
+    },
+    completedAt: {
+      type: Date,
     },
   },
   {

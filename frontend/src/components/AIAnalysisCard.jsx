@@ -62,7 +62,7 @@ export default function AIAnalysisCard({ analysis, isScanning }) {
                 <Brain className="h-8 w-8 text-sky-500 animate-pulse" />
               </div>
               <div className="space-y-1.5 text-center">
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Analyzing report attributes...</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">AI is inspecting your report...</p>
                 <p className="text-xs text-slate-400 animate-pulse">Running object detection & local prioritization models</p>
               </div>
             </motion.div>

@@ -1,12 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import { Sparkles, ArrowRight, ShieldAlert } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
-export default function RecommendationCard({ recommendation, workOrders = [], onCreateWorkOrder }) {
+export default function RecommendationCard({ recommendation, workOrders = [], onCreateWorkOrder, onViewWorkOrder }) {
   const { id, issueId, area, issueCount, category, action, priority } = recommendation;
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: "" });
 
-  const alreadyExists = workOrders.some((wo) => wo.issueId === issueId);
+  const showToast = (message) => {
+    setToast({ show: true, message });
+    setTimeout(() => setToast({ show: false, message: "" }), 3000);
+  };
+
+  const workOrder = workOrders?.find((wo) => (wo.issueId?._id || wo.issueId?.id || wo.issueId) === issueId);
+  const alreadyExists = !!workOrder;
 
   const getPriorityStyles = (pri) => {
     switch (pri?.toLowerCase()) {
@@ -37,9 +44,9 @@ export default function RecommendationCard({ recommendation, workOrders = [], on
         assignedDepartment,
         recommendation: action,
       });
-      alert("✓ Work Order Created Successfully!");
+      showToast("✓ Work Order Created Successfully");
     } catch (error) {
-      alert(error.message || "Failed to create work order.");
+      showToast(error.message || "Failed to create work order.");
     } finally {
       setLoading(false);
     }
@@ -85,19 +92,38 @@ export default function RecommendationCard({ recommendation, workOrders = [], on
       </div>
 
       <div className="w-full md:w-auto self-end md:self-center shrink-0">
-        <button
-          onClick={handleCreate}
-          disabled={alreadyExists || loading}
-          className={`flex w-full md:w-auto items-center justify-center gap-1.5 px-4.5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer ${
-            alreadyExists
-              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 cursor-not-allowed"
-              : "bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 disabled:opacity-50"
-          }`}
-        >
-          <span>{alreadyExists ? "✓ Work Order Created" : loading ? "Creating..." : "Create Work Order"}</span>
-          {!alreadyExists && <ArrowRight className="h-4 w-4" />}
-        </button>
+        {alreadyExists ? (
+          <button
+            type="button"
+            onClick={() => onViewWorkOrder && onViewWorkOrder(workOrder)}
+            className="flex w-full md:w-auto items-center justify-center gap-1.5 px-4.5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+          >
+            View Work Order
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleCreate}
+            disabled={loading}
+            className="flex w-full md:w-auto items-center justify-center gap-1.5 px-4.5 py-2.5 bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 disabled:opacity-50 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+          >
+            <span>{loading ? "Creating..." : "Create Work Order"}</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        )}
       </div>
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-5 right-5 z-[60] flex items-center gap-2.5 px-4.5 py-3.5 bg-slate-900 text-white dark:bg-white dark:text-slate-955 rounded-2xl shadow-2xl border border-slate-805 dark:border-slate-200"
+          >
+            <span className="text-xs font-black tracking-wide">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

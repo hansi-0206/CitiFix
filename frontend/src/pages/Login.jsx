@@ -9,6 +9,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -24,15 +25,24 @@ export default function Login() {
     }
     try {
       setError("");
+      setIsLoggingIn(true);
       const user = await login(email, password);
       const role = user.role || "Citizen";
+      setIsLoggingIn(false);
       if (role === "Officer" || role === "Municipal Officer" || role === "Admin") {
         navigate("/impact");
       } else {
         navigate("/feed");
       }
     } catch (err) {
-      setError(err.message || "Invalid email or password");
+      setIsLoggingIn(false);
+      let friendlyMessage = err.message || "Invalid email or password";
+      if (err.message?.includes("500") || err.message?.includes("Internal Server Error")) {
+        friendlyMessage = "Something went wrong while signing in. Please try again.";
+      } else if (err.message?.includes("Network Error") || err.message?.includes("Network")) {
+        friendlyMessage = "Unable to connect to the server. Check your internet connection.";
+      }
+      setError(friendlyMessage);
     }
   };
 
@@ -112,9 +122,10 @@ export default function Login() {
                 <input
                   type="email"
                   value={email}
+                  disabled={isLoggingIn}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="block w-full pl-11 pr-4 py-3.5 bg-slate-100/50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-900 focus:bg-white dark:focus:bg-dark-900 border border-slate-200 dark:border-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-2xl text-[16px] font-semibold outline-none transition-all"
+                  className="block w-full pl-11 pr-4 py-3.5 bg-slate-100/50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-900 focus:bg-white dark:focus:bg-dark-900 border border-slate-200 dark:border-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-2xl text-[16px] font-semibold outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -130,14 +141,16 @@ export default function Login() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
+                  disabled={isLoggingIn}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="block w-full pl-11 pr-10 py-3.5 bg-slate-100/50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-900 focus:bg-white dark:focus:bg-dark-900 border border-slate-200 dark:border-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-2xl text-[16px] font-semibold outline-none transition-all"
+                  className="block w-full pl-11 pr-10 py-3.5 bg-slate-100/50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-900 focus:bg-white dark:focus:bg-dark-900 border border-slate-200 dark:border-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-2xl text-[16px] font-semibold outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   type="button"
+                  disabled={isLoggingIn}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
@@ -146,10 +159,17 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-sky-500/15 hover:shadow-sky-500/25 transition-all cursor-pointer text-[17px] mt-2 pt-3.5 pb-3.5"
+              disabled={isLoggingIn}
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-sky-500/15 hover:shadow-sky-500/25 transition-all cursor-pointer text-[17px] mt-2 pt-3.5 pb-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <LogIn className="h-5 w-5 animate-pulse" />
-              Sign In
+              {isLoggingIn ? (
+                <>Signing in...</>
+              ) : (
+                <>
+                  <LogIn className="h-5 w-5 animate-pulse" />
+                  Sign In
+                </>
+              )}
             </button>
           </form>
 

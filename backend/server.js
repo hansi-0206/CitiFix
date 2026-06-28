@@ -24,6 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/issues", issueRoutes);
 app.use("/api/work-orders", workOrderRoutes);
+app.use("/api/workorders", workOrderRoutes);
 
 // Base route for connectivity check
 app.get("/", (req, res) => {

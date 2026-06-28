@@ -96,4 +96,8 @@ export const workOrdersAPI = {
     const response = await API.get("/work-orders");
     return response.data;
   },
+  updateStatus: async (id, status) => {
+    const response = await API.patch(`/work-orders/${id}/status`, { status });
+    return response.data;
+  },
 };
