@@ -5,7 +5,7 @@ import User from "../models/User.js";
 const seedAdminAndOfficer = async () => {
   try {
     const officerEmail = "officer@citifix.gov";
-    const officerExists = await User.findOne({ email: officerEmail });
+    let officerExists = await User.findOne({ email: officerEmail });
     if (!officerExists) {
       await User.create({
         name: "Municipal Officer",
@@ -16,11 +16,13 @@ const seedAdminAndOfficer = async () => {
       });
       console.log(`[SEED] Created Municipal Officer account (${officerEmail})`);
     } else {
-      console.log(`[SEED] Municipal Officer account already exists (${officerEmail})`);
+      officerExists.password = "Officer@123";
+      await officerExists.save();
+      console.log(`[SEED] Municipal Officer password updated successfully (${officerEmail})`);
     }
 
     const adminEmail = "admin@citifix.gov";
-    const adminExists = await User.findOne({ email: adminEmail });
+    let adminExists = await User.findOne({ email: adminEmail });
     if (!adminExists) {
       await User.create({
         name: "System Administrator",
@@ -31,7 +33,9 @@ const seedAdminAndOfficer = async () => {
       });
       console.log(`[SEED] Created System Administrator account (${adminEmail})`);
     } else {
-      console.log(`[SEED] System Administrator account already exists (${adminEmail})`);
+      adminExists.password = "Admin@123";
+      await adminExists.save();
+      console.log(`[SEED] System Administrator password updated successfully (${adminEmail})`);
     }
   } catch (error) {
     console.error(`[SEED ERROR] Failed to seed officer/admin accounts: ${error.message}`);
