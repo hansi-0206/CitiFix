@@ -174,9 +174,9 @@ Admin
 ### Landing Page
 
 <p align="center">
-<img src="assets/screenshots/landing-1.png" width="32%">
-<img src="assets/screenshots/landing-2.png" width="32%">
-<img src="assets/screenshots/landing-3.png" width="32%">
+<img src="assets/Screenshots/landing-1.png" width="32%">
+<img src="assets/Screenshots/landing-2.png" width="32%">
+<img src="assets/Screenshots/landing-3.png" width="32%">
 </p>
 
 ---
@@ -184,8 +184,8 @@ Admin
 ### Authentication
 
 <p align="center">
-<img src="assets/screenshots/signin.png" width="45%">
-<img src="assets/screenshots/signup.png" width="45%">
+<img src="assets/Screenshots/signin.png" width="45%">
+<img src="assets/Screenshots/signup.png" width="45%">
 </p>
 
 ---
@@ -193,7 +193,7 @@ Admin
 ### AI Image Analysis
 
 <p align="center">
-<img src="assets/screenshots/ai-analysis.png" width="80%">
+<img src="assets/Screenshots/ai-analysis.png" width="80%">
 </p>
 
 ---
@@ -201,7 +201,7 @@ Admin
 ### Duplicate Detection
 
 <p align="center">
-<img src="assets/screenshots/duplicate-detection.png" width="80%">
+<img src="assets/Screenshots/duplicate-detection.png" width="80%">
 </p>
 
 ---
@@ -209,8 +209,8 @@ Admin
 ### Community Map
 
 <p align="center">
-<img src="assets/screenshots/communitymap-1.png" width="45%">
-<img src="assets/screenshots/communitymap-2.png" width="45%">
+<img src="assets/Screenshots/communitymap-1.png" width="45%">
+<img src="assets/Screenshots/communitymap-2.png" width="45%">
 </p>
 
 ---
@@ -218,8 +218,8 @@ Admin
 ### Impact Dashboard
 
 <p align="center">
-<img src="assets/screenshots/impact-1.png" width="45%">
-<img src="assets/screenshots/impact-2.png" width="45%">
+<img src="assets/Screenshots/impact-1.png" width="45%">
+<img src="assets/Screenshots/impact-2.png" width="45%">
 </p>
 
 ---
@@ -227,7 +227,7 @@ Admin
 ### Citizen Dashboard
 
 <p align="center">
-<img src="assets/screenshots/citizen-dashboard.png" width="80%">
+<img src="assets/Screenshots/citizen-dashboard.png" width="80%">
 </p>
 
 ---
@@ -235,9 +235,9 @@ Admin
 ### Municipal Officer Dashboard
 
 <p align="center">
-<img src="assets/screenshots/officer-1.png" width="32%">
-<img src="assets/screenshots/officer-2.png" width="32%">
-<img src="assets/screenshots/officer-3.png" width="32%">
+<img src="assets/Screenshots/officer-1.png" width="32%">
+<img src="assets/Screenshots/officer-2.png" width="32%">
+<img src="assets/Screenshots/officer-3.png" width="32%">
 </p>
 
 ---
@@ -245,10 +245,10 @@ Admin
 ### Administrator Dashboard
 
 <p align="center">
-<img src="assets/screenshots/admin-1.png" width="24%">
-<img src="assets/screenshots/admin-2.png" width="24%">
-<img src="assets/screenshots/admin-3.png" width="24%">
-<img src="assets/screenshots/admin-4.png" width="24%">
+<img src="assets/Screenshots/admin-1.png" width="24%">
+<img src="assets/Screenshots/admin-2.png" width="24%">
+<img src="assets/Screenshots/admin-3.png" width="24%">
+<img src="assets/Screenshots/admin-4.png" width="24%">
 </p>
 
 ---
@@ -258,7 +258,7 @@ Admin
 Clone the repository
 
 ```bash
-git clone https://github.com/your-username/CitiFix.git
+git clone https://github.com/hansi-0206/CitiFix.git
 ```
 
 Install dependencies
