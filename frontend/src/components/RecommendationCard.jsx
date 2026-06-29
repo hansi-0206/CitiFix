@@ -12,7 +12,10 @@ export default function RecommendationCard({ recommendation, workOrders = [], on
     setTimeout(() => setToast({ show: false, message: "" }), 3000);
   };
 
-  const workOrder = workOrders?.find((wo) => (wo.issueId?._id || wo.issueId?.id || wo.issueId) === issueId);
+  const workOrder = workOrders?.find((wo) => {
+    const woIssueId = wo.issueId?._id || wo.issueId?.id || wo.issueId || wo.issue?._id || wo.issue?.id || wo.issue;
+    return woIssueId && woIssueId.toString() === issueId?.toString();
+  });
   const alreadyExists = !!workOrder;
 
   const getPriorityStyles = (pri) => {
@@ -37,14 +40,25 @@ export default function RecommendationCard({ recommendation, workOrders = [], on
       if (category === "Utility Failures") assignedDepartment = "Electrical Grid Maintenance";
       if (category === "Public Facilities") assignedDepartment = "Public Infrastructure Repair";
 
-      await onCreateWorkOrder({
+      const result = await onCreateWorkOrder({
         issueId,
         category,
         priority,
         assignedDepartment,
         recommendation: action,
       });
-      showToast("✓ Work Order Created Successfully");
+
+      if (result?.alreadyExists) {
+        showToast("✓ Work Order Already Exists");
+        if (onViewWorkOrder) {
+          onViewWorkOrder(result.workOrder || { _id: result.workOrderId });
+        }
+      } else {
+        showToast("✓ Work Order Created Successfully");
+        if (result && onViewWorkOrder) {
+          onViewWorkOrder(result);
+        }
+      }
     } catch (error) {
       showToast(error.message || "Failed to create work order.");
     } finally {

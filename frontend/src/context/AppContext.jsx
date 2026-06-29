@@ -122,6 +122,16 @@ export const AppProvider = ({ children }) => {
       await fetchDashboardStats();
       return data;
     } catch (error) {
+      if (error.response?.status === 409 && error.response?.data?.workOrderId) {
+        await fetchWorkOrders();
+        await fetchIssues();
+        await fetchDashboardStats();
+        return {
+          alreadyExists: true,
+          workOrderId: error.response.data.workOrderId,
+          workOrder: error.response.data.workOrder
+        };
+      }
       const customErr = new Error(error.response?.data?.message || "Error creating work order");
       customErr.status = error.response?.status;
       customErr.data = error.response?.data;
