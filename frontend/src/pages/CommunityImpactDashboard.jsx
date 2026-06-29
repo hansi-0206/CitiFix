@@ -526,160 +526,287 @@ export default function CommunityImpactDashboard() {
                 ></motion.div>
 
                 {/* Modal Body */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  className="relative w-full max-w-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
-                >
-                  {/* Header */}
-                  <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-                    <div>
-                      <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                        Work Order Management
-                      </h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                        WO-ID: {activeWorkOrder._id}
-                      </p>
+                {canManageWorkOrders ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="relative w-full max-w-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
+                  >
+                    {/* Header */}
+                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                      <div>
+                        <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                          Work Order Management
+                        </h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                          WO-ID: {activeWorkOrder._id}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(false)}
+                        className="h-8 w-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
+                      >
+                        ✕
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsModalOpen(false)}
-                      className="h-8 w-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
-                    >
-                      ✕
-                    </button>
-                  </div>
 
-                  {/* Scrollable Content */}
-                  <div className="p-6 overflow-y-auto space-y-6 text-sm font-medium">
-                    {/* Linked Issue Details */}
-                    {linkedIssue && (
-                      <div className="flex gap-4 items-center p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/25 dark:border-slate-800/40">
-                        <img
-                          src={linkedIssue.imageUrl}
-                          alt=""
-                          className="w-16 h-16 rounded-xl object-cover border border-slate-200/20 shrink-0"
-                        />
-                        <div>
-                          <span className="text-[10px] font-bold text-sky-500 uppercase tracking-wide">
-                            {linkedIssue.category}
+                    {/* Scrollable Content */}
+                    <div className="p-6 overflow-y-auto space-y-6 text-sm font-medium">
+                      {/* Linked Issue Details */}
+                      {linkedIssue && (
+                        <div className="flex gap-4 items-center p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/25 dark:border-slate-800/40">
+                          <img
+                            src={linkedIssue.imageUrl}
+                            alt=""
+                            className="w-16 h-16 rounded-xl object-cover border border-slate-200/20 shrink-0"
+                          />
+                          <div>
+                            <span className="text-[10px] font-bold text-sky-500 uppercase tracking-wide">
+                              {linkedIssue.category}
+                            </span>
+                            <h4 className="text-sm font-extrabold text-slate-900 dark:text-white line-clamp-1 mt-0.5">
+                              {linkedIssue.title}
+                            </h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                              {linkedIssue.location?.address}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Assigned Department
                           </span>
-                          <h4 className="text-sm font-extrabold text-slate-900 dark:text-white line-clamp-1 mt-0.5">
-                            {linkedIssue.title}
-                          </h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
-                            {linkedIssue.location?.address}
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            {getDepartmentName(activeWorkOrder.category)}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Priority Level
+                          </span>
+                          <p className="text-xs font-bold text-rose-500 uppercase">
+                            {activeWorkOrder.priority}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Created Date
+                          </span>
+                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-350">
+                            {new Date(activeWorkOrder.createdAt || Date.now()).toLocaleDateString("en-US", {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric"
+                            })}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Last Updated
+                          </span>
+                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-350">
+                            {new Date(activeWorkOrder.updatedAt || Date.now()).toLocaleDateString("en-US", {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })}
                           </p>
                         </div>
                       </div>
-                    )}
 
-                    {/* Details Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Assigned Department
+                      {/* AI Recommended Action */}
+                      <div className="p-4 bg-sky-500/5 rounded-2xl border border-sky-500/10 space-y-1.5">
+                        <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider block">
+                          AI Recommended Action
                         </span>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {getDepartmentName(activeWorkOrder.category)}
+                        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-semibold">
+                          {activeWorkOrder.recommendation || "Inspect and resolve issue."}
                         </p>
                       </div>
 
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Priority Level
-                        </span>
-                        <p className="text-xs font-bold text-rose-500 uppercase">
-                          {activeWorkOrder.priority}
-                        </p>
-                      </div>
+                      {/* Status Section */}
+                      <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/20 dark:border-slate-800/40 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            Current Status
+                          </span>
+                          <span className="inline-block mt-1.5 px-3 py-1 bg-sky-500/10 text-sky-500 font-black text-xs uppercase rounded-full tracking-wide">
+                            {activeWorkOrder.status}
+                          </span>
+                        </div>
 
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Created Date
-                        </span>
-                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-350">
-                          {new Date(activeWorkOrder.createdAt || Date.now()).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric"
-                          })}
-                        </p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Last Updated
-                        </span>
-                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-350">
-                          {new Date(activeWorkOrder.updatedAt || Date.now()).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit"
-                          })}
-                        </p>
+                        {/* Actions for Officers / Admins */}
+                        {canManageWorkOrders && activeWorkOrder.status !== "Resolved" && (
+                          <div className="flex gap-2">
+                            {activeWorkOrder.status === "Pending" && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateWorkOrderStatus("In Progress")}
+                                className="px-3 py-1.5 bg-blue-500 hover:bg-blue-650 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
+                              >
+                                Start Repair
+                              </button>
+                            )}
+                            {(activeWorkOrder.status === "Pending" || activeWorkOrder.status === "In Progress") && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateWorkOrderStatus("Completed")}
+                                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
+                              >
+                                Mark Completed
+                              </button>
+                            )}
+                            {activeWorkOrder.status !== "Resolved" && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateWorkOrderStatus("Resolved")}
+                                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-650 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
+                              >
+                                Mark Resolved
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-
-                    {/* AI Recommended Action */}
-                    <div className="p-4 bg-sky-500/5 rounded-2xl border border-sky-500/10 space-y-1.5">
-                      <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider block">
-                        AI Recommended Action
-                      </span>
-                      <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-semibold">
-                        {activeWorkOrder.recommendation || "Inspect and resolve issue."}
-                      </p>
-                    </div>
-
-                    {/* Status Section */}
-                    <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/20 dark:border-slate-800/40 flex items-center justify-between">
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="relative w-full max-w-md bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
+                  >
+                    {/* Header */}
+                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                          Current Status
-                        </span>
-                        <span className="inline-block mt-1.5 px-3 py-1 bg-sky-500/10 text-sky-500 font-black text-xs uppercase rounded-full tracking-wide">
-                          {activeWorkOrder.status}
-                        </span>
+                        <h3 className="text-base font-extrabold text-slate-900 dark:text-white font-display">
+                          Issue Status Tracker
+                        </h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                          WO-ID: {activeWorkOrder._id}
+                        </p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(false)}
+                        className="h-8 w-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 flex items-center justify-center transition-colors text-lg font-bold cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
 
-                      {/* Actions for Officers / Admins */}
-                      {canManageWorkOrders && activeWorkOrder.status !== "Resolved" && (
-                        <div className="flex gap-2">
-                          {activeWorkOrder.status === "Pending" && (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateWorkOrderStatus("In Progress")}
-                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-650 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
-                            >
-                              Start Repair
-                            </button>
-                          )}
-                          {(activeWorkOrder.status === "Pending" || activeWorkOrder.status === "In Progress") && (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateWorkOrderStatus("Completed")}
-                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
-                            >
-                              Mark Completed
-                            </button>
-                          )}
-                          {activeWorkOrder.status !== "Resolved" && (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateWorkOrderStatus("Resolved")}
-                              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-650 text-white font-bold text-[11px] rounded-xl cursor-pointer shadow-sm transition-all"
-                            >
-                              Mark Resolved
-                            </button>
-                          )}
+                    {/* Scrollable Content */}
+                    <div className="p-6 overflow-y-auto space-y-6 text-sm font-medium">
+                      {/* Linked Issue Details */}
+                      {linkedIssue && (
+                        <div className="flex gap-3 items-center p-3.5 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/25 dark:border-slate-800/40">
+                          <img
+                            src={linkedIssue.imageUrl}
+                            alt=""
+                            className="w-12 h-12 rounded-xl object-cover border border-slate-200/20 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <span className="text-[9px] font-bold text-sky-500 uppercase tracking-wide">
+                              {linkedIssue.category}
+                            </span>
+                            <h4 className="text-xs font-extrabold text-slate-900 dark:text-white truncate mt-0.5">
+                              {linkedIssue.title}
+                            </h4>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-405 truncate mt-0.5 leading-none">
+                              {linkedIssue.location?.address}
+                            </p>
+                          </div>
                         </div>
                       )}
+
+                      {/* Status Tracker Steps */}
+                      {(() => {
+                        const issueStatus = linkedIssue?.status || activeWorkOrder.status;
+                        const steps = [
+                          { label: "Report Submitted", desc: "Your report has been successfully logged." },
+                          { label: "AI Analysis Completed", desc: "Vulnerability and priority analyzed by Gemini." },
+                          { label: "Work Order Created", desc: "Municipal dispatch work order created." },
+                          { label: "Assigned to Department", desc: "Work order routed to department team." },
+                          { label: "Repair In Progress", desc: "Crews dispatched and conducting repairs." },
+                          { label: "Quality Inspection", desc: "Verifying repair quality and standards." },
+                          { label: "Resolved", desc: "Anomaly successfully resolved." },
+                          { label: "Citizen Confirmation", desc: "Awaiting final citizen confirmation." },
+                        ];
+
+                        const getStepStatus = (stepIndex, currentStatus) => {
+                          const status = currentStatus?.toLowerCase();
+                          switch (stepIndex) {
+                            case 0:
+                            case 1:
+                              return "completed";
+                            case 2:
+                              return ["work order created", "assigned", "in progress", "pending verification", "resolved"].includes(status) ? "completed" : "pending";
+                            case 3:
+                              return ["assigned", "in progress", "pending verification", "resolved"].includes(status) ? "completed" : "pending";
+                            case 4:
+                              return ["in progress", "pending verification", "resolved"].includes(status) ? "completed" : "pending";
+                            case 5:
+                              return ["pending verification", "resolved"].includes(status) ? "completed" : "pending";
+                            case 6:
+                            case 7:
+                              return status === "resolved" ? "completed" : "pending";
+                            default:
+                              return "pending";
+                          }
+                        };
+
+                        return (
+                          <div className="space-y-4.5 pl-1.5">
+                            {steps.map((step, idx) => {
+                              const stepState = getStepStatus(idx, issueStatus);
+                              const isCompleted = stepState === "completed";
+                              return (
+                                <div key={idx} className="flex gap-4.5 items-start relative">
+                                  <div className="flex flex-col items-center shrink-0 mt-0.5">
+                                    <div className={`h-5.5 w-5.5 rounded-full flex items-center justify-center text-[10px] font-black border transition-all duration-300 ${
+                                      isCompleted 
+                                        ? "bg-emerald-500/10 border-emerald-500 text-emerald-500 scale-105" 
+                                        : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600"
+                                    }`}>
+                                      {isCompleted ? "✓" : idx + 1}
+                                    </div>
+                                    {idx < steps.length - 1 && (
+                                      <div className={`w-0.5 h-9 transition-colors ${
+                                        isCompleted ? "bg-emerald-500/40" : "bg-slate-200 dark:bg-slate-800"
+                                      }`} />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <h5 className={`text-xs font-bold transition-colors ${
+                                      isCompleted ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-slate-500"
+                                    }`}>
+                                      {step.label}
+                                    </h5>
+                                    <p className="text-[10px] text-slate-450 dark:text-slate-500 mt-0.5 leading-snug">
+                                      {step.desc}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                )}
               </div>
             )}
           </AnimatePresence>

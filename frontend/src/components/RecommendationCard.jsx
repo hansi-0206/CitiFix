@@ -112,9 +112,9 @@ export default function RecommendationCard({ recommendation, workOrders = [], on
         </div>
       </div>
 
-      {canManageWorkOrders && (
-        <div className="w-full md:w-auto self-end md:self-center shrink-0">
-          {alreadyExists ? (
+      <div className="w-full md:w-auto self-end md:self-center shrink-0">
+        {canManageWorkOrders ? (
+          alreadyExists ? (
             <button
               type="button"
               onClick={() => onViewWorkOrder && onViewWorkOrder(workOrder)}
@@ -132,9 +132,19 @@ export default function RecommendationCard({ recommendation, workOrders = [], on
               <span>{loading ? "Creating..." : "Create Work Order"}</span>
               <ArrowRight className="h-4 w-4" />
             </button>
-          )}
-        </div>
-      )}
+          )
+        ) : (
+          alreadyExists && (
+            <button
+              type="button"
+              onClick={() => onViewWorkOrder && onViewWorkOrder(workOrder)}
+              className="flex w-full md:w-auto items-center justify-center gap-1.5 px-4.5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+            >
+              View Status
+            </button>
+          )
+        )}
+      </div>
       <AnimatePresence>
         {toast.show && (
           <motion.div
