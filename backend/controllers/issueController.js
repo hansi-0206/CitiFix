@@ -442,3 +442,43 @@ export const confirmIssueResolved = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Get dashboard statistics
+// @route   GET /api/issues/dashboard/stats
+// @access  Public
+export const getDashboardStats = async (req, res) => {
+  try {
+    // 1. Fetch community members (total registered users) using countDocuments
+    const communityMembers = await User.countDocuments();
+
+    // 2. Fetch active reports (status != Resolved)
+    const activeReports = await Issue.countDocuments({ status: { $ne: "Resolved" } });
+
+    // 3. Fetch resolved issues (status == Resolved)
+    const resolvedIssues = await Issue.countDocuments({ status: "Resolved" });
+
+    // 4. Calculate participation score
+    const reportedUsers = await Issue.distinct("reportedBy");
+    const upvotedUsers = await Issue.distinct("upvotes");
+
+    const uniqueParticipants = new Set([
+      ...reportedUsers.map((id) => id.toString()),
+      ...upvotedUsers.map((id) => id.toString()),
+    ]);
+
+    const participantCount = uniqueParticipants.size;
+    const participationScore = communityMembers > 0
+      ? Math.min(100, Math.round((participantCount / communityMembers) * 100))
+      : 0;
+
+    res.json({
+      activeReports,
+      resolvedIssues,
+      communityMembers,
+      participationScore,
+    });
+  } catch (error) {
+    console.error("Get Dashboard Stats Error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};

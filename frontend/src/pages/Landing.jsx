@@ -7,7 +7,7 @@ import StatsCard from "../components/StatsCard";
 import { issuesAPI } from "../services/api";
 
 export default function Landing() {
-  const { issues } = useApp();
+  const { issues, dashboardStats, isStatsLoading } = useApp();
   const [nearbyIssues, setNearbyIssues] = useState([]);
   const [useRealGPS, setUseRealGPS] = useState(false);
 
@@ -51,10 +51,10 @@ export default function Landing() {
 
   // Statistics summaries
   const stats = [
-    { title: "Active Reports", value: issues.filter(i => i.status !== "Resolved").length, icon: AlertCircle, color: "sky" },
-    { title: "Resolved Issues", value: issues.filter(i => i.status === "Resolved").length, icon: CheckCircle2, color: "emerald" },
-    { title: "Community Members", value: 1842, icon: Users, color: "violet" },
-    { title: "Participation Score", value: "84%", icon: Award, color: "amber" }
+    { title: "Active Reports", value: dashboardStats.activeReports, icon: AlertCircle, color: "sky" },
+    { title: "Resolved Issues", value: dashboardStats.resolvedIssues, icon: CheckCircle2, color: "emerald" },
+    { title: "Community Members", value: dashboardStats.communityMembers, icon: Users, color: "violet" },
+    { title: "Participation Score", value: `${dashboardStats.participationScore}%`, icon: Award, color: "amber" }
   ];
 
   const features = [
@@ -131,15 +131,27 @@ export default function Landing() {
       {/* Statistics Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {stats.map((stat, i) => (
-            <StatsCard
-              key={i}
-              title={stat.title}
-              value={stat.value}
-              icon={stat.icon}
-              color={stat.color}
-            />
-          ))}
+          {isStatsLoading ? (
+            [1, 2, 3, 4].map((n) => (
+              <div key={n} className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-3xl p-5 flex items-center justify-between shadow-sm animate-pulse h-24">
+                <div className="space-y-2">
+                  <div className="h-4 bg-slate-205 dark:bg-slate-800 rounded w-24"></div>
+                  <div className="h-6 bg-slate-205 dark:bg-slate-800 rounded w-16"></div>
+                </div>
+                <div className="h-10 w-10 bg-slate-205 dark:bg-slate-800 rounded-full"></div>
+              </div>
+            ))
+          ) : (
+            stats.map((stat, i) => (
+              <StatsCard
+                key={i}
+                title={stat.title}
+                value={stat.value}
+                icon={stat.icon}
+                color={stat.color}
+              />
+            ))
+          )}
         </div>
       </section>
 

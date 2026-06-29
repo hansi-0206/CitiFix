@@ -9,6 +9,7 @@ import {
   getNearbyIssues,
   analyzeIssue,
   confirmIssueResolved,
+  getDashboardStats,
 } from "../controllers/issueController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { upload } from "../middleware/uploadMiddleware.js";
@@ -18,6 +19,7 @@ const router = express.Router();
 // Public routes
 router.get("/", getIssues);
 router.get("/nearby", getNearbyIssues);
+router.get("/dashboard/stats", getDashboardStats);
 router.get("/:id", getIssueById);
 
 // Protected routes

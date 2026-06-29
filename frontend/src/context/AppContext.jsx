@@ -8,6 +8,13 @@ export const AppProvider = ({ children }) => {
   const [workOrders, setWorkOrders] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState({
+    activeReports: 0,
+    resolvedIssues: 0,
+    communityMembers: 0,
+    participationScore: 0,
+  });
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
 
   // Fetch all issues from backend database
   const fetchIssues = useCallback(async (filters = {}) => {
@@ -95,11 +102,24 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchDashboardStats = useCallback(async () => {
+    try {
+      setIsStatsLoading(true);
+      const data = await issuesAPI.getDashboardStats();
+      setDashboardStats(data);
+    } catch (error) {
+      console.error("Error fetching dashboard statistics:", error);
+    } finally {
+      setIsStatsLoading(false);
+    }
+  }, []);
+
   const createWorkOrder = async (workOrderData) => {
     try {
       const data = await workOrdersAPI.createWorkOrder(workOrderData);
       await fetchWorkOrders();
       await fetchIssues();
+      await fetchDashboardStats();
       return data;
     } catch (error) {
       const customErr = new Error(error.response?.data?.message || "Error creating work order");
@@ -115,9 +135,10 @@ export const AppProvider = ({ children }) => {
       await fetchUserProfile();
       await fetchIssues();
       await fetchWorkOrders();
+      await fetchDashboardStats();
     };
     initializeApp();
-  }, [fetchUserProfile, fetchIssues, fetchWorkOrders]);
+  }, [fetchUserProfile, fetchIssues, fetchWorkOrders, fetchDashboardStats]);
 
   // Sign In function
   const login = async (email, password) => {
@@ -157,6 +178,7 @@ export const AppProvider = ({ children }) => {
         joinedDate: data.createdAt,
       });
       await fetchIssues();
+      await fetchDashboardStats();
       return data;
     } catch (error) {
       throw new Error(error.response?.data?.message || "Registration failed");
@@ -176,6 +198,7 @@ export const AppProvider = ({ children }) => {
       // Re-fetch profile and issues to sync points & upvote count
       await fetchUserProfile();
       await fetchIssues();
+      await fetchDashboardStats();
     } catch (error) {
       console.warn("Upvote check warning:", error.response?.data?.message || error.message);
     }
@@ -187,6 +210,7 @@ export const AppProvider = ({ children }) => {
       const result = await issuesAPI.createIssue(newIssueFormData);
       await fetchUserProfile();
       await fetchIssues();
+      await fetchDashboardStats();
       return result;
     } catch (error) {
       throw new Error(error.response?.data?.message || "Error filing report");
@@ -237,6 +261,7 @@ export const AppProvider = ({ children }) => {
       await issuesAPI.updateStatus(issueId, targetStatus);
       await fetchUserProfile();
       await fetchIssues();
+      await fetchDashboardStats();
     } catch (error) {
       console.error("Error updating issue status:", error);
       throw error;
@@ -249,6 +274,7 @@ export const AppProvider = ({ children }) => {
       await issuesAPI.confirmResolved(issueId);
       await fetchUserProfile();
       await fetchIssues();
+      await fetchDashboardStats();
     } catch (error) {
       console.error("Error confirming resolved status:", error);
       throw error;
@@ -267,6 +293,7 @@ export const AppProvider = ({ children }) => {
       await fetchWorkOrders();
       await fetchIssues();
       await fetchUserProfile();
+      await fetchDashboardStats();
       return data;
     } catch (error) {
       console.error("Error updating work order status:", error);
@@ -308,9 +335,13 @@ export const AppProvider = ({ children }) => {
         updateWorkOrderStatus,
         getMetrics,
         createWorkOrder,
+        dashboardStats,
+        isStatsLoading,
+        fetchDashboardStats,
         refreshDashboard: async () => {
           await fetchIssues();
           await fetchWorkOrders();
+          await fetchDashboardStats();
         },
         refreshIssues: fetchIssues,
       }}

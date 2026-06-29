@@ -80,6 +80,10 @@ export const issuesAPI = {
     const response = await API.post(`/issues/${id}/confirm-resolved`);
     return response.data;
   },
+  getDashboardStats: async () => {
+    const response = await API.get("/issues/dashboard/stats");
+    return response.data;
+  },
   getNearbyIssues: async (lat, lng, radius = 5000) => {
     const response = await API.get(`/issues/nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
     return response.data;
