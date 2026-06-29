@@ -1,157 +1,324 @@
 # CitiFix – AI-Powered Community Issue Detection & Resolution Platform
 
-CitiFix is a MERN-stack (MongoDB, Express.js, React, Node.js) web application designed to empower local citizens to report, track, and support civic issues. Integrating Leaflet OpenStreetMap, Cloudinary, and Google Gemini AI, the platform auto-categorizes complaints, calculates priority indexes, identifies duplicate reports in proximity, and rewards users via a reputation points system.
+CitiFix is a full-stack MERN web application that enables citizens to report civic issues while helping municipal authorities manage and resolve them efficiently. The platform leverages AI to analyze uploaded images, detect duplicate reports, prioritize issues, and generate actionable recommendations, creating a smarter and more collaborative civic ecosystem.
 
 ---
 
-## 📁 Repository Structure
+## 🚀 Live Demo
 
-```text
-CitiFix/
-├── frontend/             # React + Vite Client (Leaflet, Tailwind, Axios)
-│   ├── src/
-│   │   ├── services/
-│   │   │   └── api.js    # Axios client & MERN API calls
-│   │   └── context/
-│   │       └── AppContext.jsx # Global MERN session & state synchronizer
-│   └── package.json
-├── backend/              # Node.js + Express.js Server
-│   ├── config/           # Database & Cloudinary keys setup
-│   ├── controllers/      # Route actions (Auth, Issues, Duplicates)
-│   ├── middleware/       # JWT verifier & Multer uploader
-│   ├── models/           # Mongoose schemas (User, Issue)
-│   ├── routes/           # Routing middleware maps
-│   ├── services/         # Gemini AI photo base64 analysis
-│   ├── server.js         # Entrypoint
-│   └── package.json
-├── package.json          # Root Concurrently Runner
-└── README.md             # This document
+* **Frontend (Vercel):** `https://your-vercel-url.vercel.app`
+* **Backend (Railway):** `https://your-railway-url.up.railway.app`
+
+---
+
+## ✨ Features
+
+### 👥 Citizen Portal
+
+* Secure JWT Authentication
+* Report civic issues with image and location
+* AI-powered image analysis and category prediction
+* AI-generated severity & priority score
+* Duplicate issue detection within nearby radius
+* Interactive community map
+* Upvote community issues
+* Track issue progress through status timeline
+* Earn reputation points and badges
+* Dynamic dashboard with:
+
+  * Active Reports
+  * Resolved Issues
+  * Community Members
+  * Participation Score
+
+---
+
+### 🏛️ Municipal Officer Portal
+
+* View AI-generated municipal recommendations
+* Create work orders from recurring issues
+* Update work order status
+* Start Repair
+* Mark Completed
+* Mark Resolved
+* Manage assigned civic issues
+
+---
+
+### ⚙️ Administrator Portal
+
+* Full access to all municipal features
+* Monitor reported issues
+* Manage work orders
+* Update issue lifecycle
+* Administrative oversight of the platform
+
+---
+
+## 🤖 AI Features
+
+* AI image analysis using **Groq LLM**
+* Automatic issue categorization
+* Severity prediction
+* Dynamic priority scoring based on issue description
+* AI-generated issue summary
+* Duplicate issue detection
+* AI municipal recommendations
+* Recommended repair actions
+
+---
+
+## 📊 Smart Dashboard
+
+The dashboard statistics are generated dynamically from the database.
+
+* Active Reports
+* Resolved Issues
+* Community Members
+* Participation Score
+
+Community Members automatically increase whenever a new user registers.
+
+Participation Score is calculated based on unique users who have actively contributed by reporting or supporting issues.
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+
+* React
+* Vite
+* Tailwind CSS
+* Axios
+* Leaflet Maps
+* React Context API
+
+### Backend
+
+* Node.js
+* Express.js
+* MongoDB Atlas
+* Mongoose
+* JWT Authentication
+* Multer
+* Cloudinary
+
+### AI
+
+* Groq LLM
+
+### Deployment
+
+* Frontend → Vercel
+* Backend → Railway
+* Database → MongoDB Atlas
+* Image Storage → Cloudinary
+
+---
+
+## 🔐 Demo Credentials
+
+### 👤 Citizen
+
+Create a new account using **Sign Up**.
+
+---
+
+### 🏛️ Municipal Officer
+
+Email:
+
+```
+officer@citifix.gov
+```
+
+Password:
+
+```
+Officer@123
+```
+
+Role:
+
+```
+Officer
 ```
 
 ---
 
-## 🛠️ Environment Variables Configuration
+### ⚙️ System Administrator
 
-Create a `.env` file in the `backend/` directory using the following keys:
+Email:
+
+```
+admin@citifix.gov
+```
+
+Password:
+
+```
+Admin@123
+```
+
+Role:
+
+```
+Admin
+```
+
+---
+
+## 📸 Application Screenshots
+
+### Landing Page
+
+<p align="center">
+<img src="assets/screenshots/landing-1.png" width="32%">
+<img src="assets/screenshots/landing-2.png" width="32%">
+<img src="assets/screenshots/landing-3.png" width="32%">
+</p>
+
+---
+
+### Authentication
+
+<p align="center">
+<img src="assets/screenshots/signin.png" width="45%">
+<img src="assets/screenshots/signup.png" width="45%">
+</p>
+
+---
+
+### AI Image Analysis
+
+<p align="center">
+<img src="assets/screenshots/ai-analysis.png" width="80%">
+</p>
+
+---
+
+### Duplicate Detection
+
+<p align="center">
+<img src="assets/screenshots/duplicate-detection.png" width="80%">
+</p>
+
+---
+
+### Community Map
+
+<p align="center">
+<img src="assets/screenshots/communitymap-1.png" width="45%">
+<img src="assets/screenshots/communitymap-2.png" width="45%">
+</p>
+
+---
+
+### Impact Dashboard
+
+<p align="center">
+<img src="assets/screenshots/impact-1.png" width="45%">
+<img src="assets/screenshots/impact-2.png" width="45%">
+</p>
+
+---
+
+### Citizen Dashboard
+
+<p align="center">
+<img src="assets/screenshots/citizen-dashboard.png" width="80%">
+</p>
+
+---
+
+### Municipal Officer Dashboard
+
+<p align="center">
+<img src="assets/screenshots/officer-1.png" width="32%">
+<img src="assets/screenshots/officer-2.png" width="32%">
+<img src="assets/screenshots/officer-3.png" width="32%">
+</p>
+
+---
+
+### Administrator Dashboard
+
+<p align="center">
+<img src="assets/screenshots/admin-1.png" width="24%">
+<img src="assets/screenshots/admin-2.png" width="24%">
+<img src="assets/screenshots/admin-3.png" width="24%">
+<img src="assets/screenshots/admin-4.png" width="24%">
+</p>
+
+---
+
+## ⚙️ Local Setup
+
+Clone the repository
+
+```bash
+git clone https://github.com/your-username/CitiFix.git
+```
+
+Install dependencies
+
+```bash
+npm run install-all
+```
+
+Backend `.env`
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/citifix?retryWrites=true&w=majority
-JWT_SECRET=your_jwt_secret_signing_key_here
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-GEMINI_API_KEY=your_gemini_api_key
+MONGODB_URI=your_mongodb_uri
+JWT_SECRET=your_secret
 CLIENT_URL=http://localhost:5173
+
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+GROQ_API_KEY=your_groq_api_key
+```
+
+Run locally
+
+```bash
+npm run dev
 ```
 
 ---
 
-## 🚀 Setup & Launch Instructions
+## 📦 Project Structure
 
-### Local Execution (Concurrently)
-
-1. **Install Root and Workspace Dependencies**:
-   From the project root folder:
-   ```bash
-   npm run install-all
-   ```
-2. **Launch Both Servers in Dev Mode**:
-   From the project root folder:
-   ```bash
-   npm run dev
-   ```
-   This will concurrently boot:
-   - Backend Express API Server on [http://localhost:5000](http://localhost:5000)
-   - Frontend React client on [http://localhost:5173](http://localhost:5173)
+```
+CitiFix
+├── frontend
+├── backend
+├── assets
+│   └── screenshots
+└── README.md
+```
 
 ---
 
-## 📡 REST API Documentation
+## 📝 Deployment Note
 
-### Authentication (`/api/auth`)
+The original project specification suggested **Google AI Studio (Gemini)** and **Google Cloud Run**.
 
-#### 1. Register User
-- **Endpoint**: `POST /api/auth/register`
-- **Body**: `{ "name": "John Doe", "email": "john@citifix.org", "password": "securepassword" }`
-- **Response**: Registers user, awards 10 points (Civic Contributor), returns signed JWT.
+Due to billing limitations during development, the project was deployed using:
 
-#### 2. Login User
-- **Endpoint**: `POST /api/auth/login`
-- **Body**: `{ "email": "john@citifix.org", "password": "securepassword" }`
-- **Response**: Returns validated user details + signed JWT token.
+* **Groq LLM** instead of Google AI Studio
+* **Railway** instead of Google Cloud Run
+* **Vercel** for frontend hosting
 
-#### 3. User Profile
-- **Endpoint**: `GET /api/auth/profile`
-- **Headers**: `Authorization: Bearer <JWT_TOKEN>`
-- **Response**: Returns authenticated profile fields.
+The application's functionality remains the same while using these equivalent services.
 
 ---
 
-### Issues & Mapping (`/api/issues`)
+## 👨‍💻 Developed By
 
-#### 1. Create Civic Ticket
-- **Endpoint**: `POST /api/issues`
-- **Headers**: `Authorization: Bearer <JWT_TOKEN>`
-- **Body**: `Multipart/form-data` containing:
-  - `image`: File buffer
-  - `description`: Text details of the incident
-  - `category`: Base category
-  - `latitude` & `longitude`: Geolocation coords
-  - `address`: Street name
-  - `bypassDuplicateCheck`: `"true"` | `"false"`
-- **Response**: Auto-detects duplicates, runs Gemini AI classification on details, uploads to Cloudinary, awards +20 points, and returns the issue.
+**Hansika Saravanakumar**
 
-#### 2. Check for Proximity Duplicates
-- **Endpoint**: `POST /api/issues/check-duplicate`
-- **Headers**: `Authorization: Bearer <JWT_TOKEN>`
-- **Body**: `{ "latitude": 12.9718, "longitude": 77.5948, "category": "Road Damage" }`
-- **Response**: Returns duplicate matches within 100 meters.
-
-#### 3. List Issues
-- **Endpoint**: `GET /api/issues`
-- **Params**: `category`, `severity`, `status`, `search`
-- **Response**: Array of matches populated with reporter info.
-
-#### 4. Get Incident by ID
-- **Endpoint**: `GET /api/issues/:id`
-- **Response**: Complete database fields for the matching document ID.
-
-#### 5. Update Status Timeline
-- **Endpoint**: `PATCH /api/issues/:id/status`
-- **Headers**: `Authorization: Bearer <JWT_TOKEN>`
-- **Body**: `{ "status": "In Progress" | "Resolved" }`
-- **Response**: Updates ticket. Resolving awards +30 points to original reporter.
-
-#### 6. Upvote Ticket
-- **Endpoint**: `POST /api/issues/:id/upvote`
-- **Headers**: `Authorization: Bearer <JWT_TOKEN>`
-- **Response**: Enforces one vote per account. Awards +5 points to original reporter.
-
-#### 7. Nearby Geospatial Queries
-- **Endpoint**: `GET /api/issues/nearby`
-- **Params**: `lat`, `lng`, `radius` (in meters)
-- **Response**: Returns issues sorted by distance, powering the Nearby Issues widgets.
-
----
-
-## ☁️ Deployment Guidelines
-
-### 1. MongoDB Atlas Setup
-- Create a Cluster on Atlas.
-- In **Network Access**, allow IP `0.0.0.0/0` (or configure specific static server IPs).
-- Create a database user, retrieve the connection URL string, and set it in MONGODB_URI.
-
-### 2. Cloudinary Setup
-- Sign up for a Cloudinary account.
-- Copy your Cloud Name, API Key, and API Secret from the Console Dashboard and paste them into your environment variables.
-
-### 3. Vercel (Frontend Deployment)
-- Create a Vercel project linked to `/frontend`.
-- Vercel automatically detects the Vite config.
-- Set environment variables: `VITE_API_URL` to your Render API server URL.
-
-### 4. Render (Backend Deployment)
-- Create a Web Service on Render linked to your repository.
-- Set root directory to `backend/` and start command to `node server.js`.
-- Add all variables listed in the backend `.env` file under **Environment**.
+B.Tech Information Technology
