@@ -6,8 +6,8 @@ CitiFix is a full-stack MERN web application that enables citizens to report civ
 
 ## 🚀 Live Demo
 
-* **Frontend (Vercel):** `https://your-vercel-url.vercel.app`
-* **Backend (Railway):** `https://your-railway-url.up.railway.app`
+* **Frontend (Vercel):** `https://citi-fix-blond.vercel.app`
+* **Backend (Railway):** `https://citifix-production.up.railway.app`
 
 ---
 
@@ -65,6 +65,19 @@ CitiFix is a full-stack MERN web application that enables citizens to report civ
 * Duplicate issue detection
 * AI municipal recommendations
 * Recommended repair actions
+
+---
+
+## 🔄 AI Workflow
+
+Issue Image + Description
+→ Groq Vision Analysis
+→ AI Category Prediction
+→ Severity Detection
+→ Dynamic Priority Score
+→ Duplicate Detection
+→ Municipal Recommendation
+→ Work Order Management
 
 ---
 
@@ -258,7 +271,7 @@ Admin
 Clone the repository
 
 ```bash
-git clone https://github.com/hansi-0206/CitiFix.git
+git clone https://github.co/CitiFix.git
 ```
 
 Install dependencies
