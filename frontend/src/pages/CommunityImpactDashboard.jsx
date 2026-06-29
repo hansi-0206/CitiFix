@@ -8,7 +8,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, 
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CommunityImpactDashboard() {
-  const { issues, getMetrics, workOrders, createWorkOrder, updateWorkOrderStatus, isLoading } = useApp();
+  const { issues, getMetrics, workOrders, createWorkOrder, updateWorkOrderStatus, isLoading, currentUser } = useApp();
   const { theme } = useTheme();
 
   const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
@@ -485,6 +485,9 @@ export default function CommunityImpactDashboard() {
           (i) => i.id === (activeWorkOrder.issueId?._id || activeWorkOrder.issueId?.id || activeWorkOrder.issueId)
         ) : null;
 
+        const userRole = currentUser?.role?.toLowerCase() || "citizen";
+        const canManageWorkOrders = userRole === "officer" || userRole === "municipal officer" || userRole === "municipal" || userRole === "admin";
+
         const getDepartmentName = (cat) => {
           const categoryMapping = {
             "Road Damage": "Public Works",
@@ -643,7 +646,7 @@ export default function CommunityImpactDashboard() {
                       </div>
 
                       {/* Actions for Officers / Admins */}
-                      {activeWorkOrder.status !== "Resolved" && (
+                      {canManageWorkOrders && activeWorkOrder.status !== "Resolved" && (
                         <div className="flex gap-2">
                           {activeWorkOrder.status === "Pending" && (
                             <button
