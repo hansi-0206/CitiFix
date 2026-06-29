@@ -329,6 +329,24 @@ Due to billing limitations during development, the project was deployed using:
 The application's functionality remains the same while using these equivalent services.
 
 ---
+## Project Demonstration Video
+
+A complete walkthrough of CitiFix demonstrating the end-to-end workflow, including:
+
+- Citizen registration and login
+- AI-powered issue reporting
+- Duplicate detection using geospatial queries
+- Community map visualization
+- Dynamic dashboard statistics
+- Municipal Officer work-order management
+- Administrator dashboard
+- Issue lifecycle from Reported to Resolved
+
+Video Link:
+https://drive.google.com/file/d/1Am21UAPDMgOqkG25fsqFltngFtfxVazV/view?usp=sharing
+
+
+---
 
 ## 👨‍💻 Developed By
 
