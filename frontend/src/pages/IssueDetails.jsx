@@ -187,7 +187,11 @@ export default function IssueDetails() {
     return categoryMapping[cat] || "Public Works";
   };
 
-  const isCitizen = currentUser?.role === "Citizen";
+  const userRole = currentUser?.role?.toLowerCase() || "citizen";
+  const isCitizen = userRole === "citizen";
+  const isOfficer = userRole === "officer" || userRole === "municipal officer" || userRole === "municipal";
+  const isAdmin = userRole === "admin";
+  const canManageWorkOrders = isOfficer || isAdmin;
 
   const stepsToShow = isCitizen ? [
     { title: "Reported", desc: "Validated by AI coprocessor engine." },
@@ -356,7 +360,7 @@ export default function IssueDetails() {
               
               <div className="flex flex-wrap gap-2">
                 {/* 1. CITIZEN PERMISSIONS */}
-                {currentUser?.role === "Citizen" && (
+                {isCitizen && (
                   <div className="flex flex-col gap-3">
                     {workOrderExists && (
                       <div className="flex items-center gap-3">
@@ -400,7 +404,7 @@ export default function IssueDetails() {
                   </div>
                 )}
                 {/* 2. MUNICIPAL OFFICER ACTIONS */}
-                {(currentUser?.role === "Officer" || currentUser?.role === "Municipal Officer") && (
+                {isOfficer && (
                   <div className="flex flex-wrap gap-2">
                     {workOrderExists ? (
                       <button
@@ -448,7 +452,7 @@ export default function IssueDetails() {
                 )}
 
                 {/* 3. ADMIN ACTIONS */}
-                {currentUser?.role === "Admin" && (
+                {isAdmin && (
                   <div className="flex flex-wrap gap-2 items-center">
                     {workOrderExists ? (
                       <button
@@ -640,7 +644,7 @@ export default function IssueDetails() {
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                 <div>
                   <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                    {currentUser?.role === "Citizen" ? "Work Order Progress" : "Work Order Management"}
+                    {isCitizen ? "Work Order Progress" : "Work Order Management"}
                   </h3>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
                     WO-ID: {workOrder._id || workOrder.id}
@@ -748,7 +752,7 @@ export default function IssueDetails() {
                   </div>
 
                   {/* Actions for Officers / Admins */}
-                  {currentUser?.role !== "Citizen" && workOrder.status !== "Resolved" && (
+                  {!isCitizen && workOrder.status !== "Resolved" && (
                     <div className="flex gap-2">
                       {workOrder.status === "Pending" && (
                         <button
