@@ -1,11 +1,18 @@
 import React, { useState } from "react";
 import { Sparkles, ArrowRight, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useApp } from "../context/AppContext";
 
 export default function RecommendationCard({ recommendation, workOrders = [], onCreateWorkOrder, onViewWorkOrder }) {
+  const { currentUser } = useApp();
   const { id, issueId, area, issueCount, category, action, priority } = recommendation;
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "" });
+
+  const canManageWorkOrders =
+    currentUser?.role === "Officer" ||
+    currentUser?.role === "Municipal Officer" ||
+    currentUser?.role === "Admin";
 
   const showToast = (message) => {
     setToast({ show: true, message });
@@ -105,27 +112,29 @@ export default function RecommendationCard({ recommendation, workOrders = [], on
         </div>
       </div>
 
-      <div className="w-full md:w-auto self-end md:self-center shrink-0">
-        {alreadyExists ? (
-          <button
-            type="button"
-            onClick={() => onViewWorkOrder && onViewWorkOrder(workOrder)}
-            className="flex w-full md:w-auto items-center justify-center gap-1.5 px-4.5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
-          >
-            View Work Order
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleCreate}
-            disabled={loading}
-            className="flex w-full md:w-auto items-center justify-center gap-1.5 px-4.5 py-2.5 bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 disabled:opacity-50 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
-          >
-            <span>{loading ? "Creating..." : "Create Work Order"}</span>
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+      {canManageWorkOrders && (
+        <div className="w-full md:w-auto self-end md:self-center shrink-0">
+          {alreadyExists ? (
+            <button
+              type="button"
+              onClick={() => onViewWorkOrder && onViewWorkOrder(workOrder)}
+              className="flex w-full md:w-auto items-center justify-center gap-1.5 px-4.5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+            >
+              View Work Order
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={loading}
+              className="flex w-full md:w-auto items-center justify-center gap-1.5 px-4.5 py-2.5 bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 disabled:opacity-50 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+            >
+              <span>{loading ? "Creating..." : "Create Work Order"}</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
       <AnimatePresence>
         {toast.show && (
           <motion.div

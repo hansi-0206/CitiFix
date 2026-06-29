@@ -30,6 +30,18 @@ export const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    res.status(401).json({ message: "Not authorized, no token" });
+    return res.status(401).json({ message: "Not authorized, no token" });
   }
+};
+
+export const restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Role (${req.user?.role || "unknown"}) is not authorized to access this resource`
+      });
+    }
+    next();
+  };
 };
