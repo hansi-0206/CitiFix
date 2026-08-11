@@ -8,7 +8,8 @@ import authRoutes from "./routes/authRoutes.js";
 import issueRoutes from "./routes/issueRoutes.js";
 import workOrderRoutes from "./routes/workOrderRoutes.js";
 
-// Connect to MongoDB
+// ==================== CONNECT DATABASE ====================
+
 connectDB();
 
 const app = express();
@@ -24,8 +25,8 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests without an Origin header
-      // such as curl, Postman, server-to-server requests
+      // Allow requests without Origin
+      // Example: Postman, curl, server-to-server
       if (!origin) {
         return callback(null, true);
       }
@@ -35,7 +36,7 @@ app.use(
         return callback(null, true);
       }
 
-      // Also allow CLIENT_URL from environment variable
+      // Allow CLIENT_URL from Cloud Run environment variable
       if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) {
         return callback(null, true);
       }
@@ -56,13 +57,16 @@ app.use(express.urlencoded({ extended: true }));
 
 // ==================== ROUTES ====================
 
+// Authentication
 app.use("/api/auth", authRoutes);
 
+// Issues
 app.use("/api/issues", issueRoutes);
 
+// Work Orders
 app.use("/api/work-orders", workOrderRoutes);
 
-// Keep both routes if your frontend uses either spelling
+// Alternative spelling
 app.use("/api/workorders", workOrderRoutes);
 
 // ==================== BASE ROUTE ====================
