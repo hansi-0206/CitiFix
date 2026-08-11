@@ -7,7 +7,7 @@ CitiFix is a full-stack MERN web application that enables citizens to report civ
 ## 🚀 Live Demo
 
 * **Frontend (Vercel):** `https://citi-fix-blond.vercel.app`
-* **Backend (Railway):** `https://citifix-production.up.railway.app`
+* **Backend (Cloudflare Workers):** `https://citifix.hansikasaravanakumar.workers.dev`
 
 ---
 

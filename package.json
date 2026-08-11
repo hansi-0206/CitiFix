@@ -9,9 +9,12 @@
     "frontend": "npm run dev --prefix frontend",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "build": "npm run build --prefix frontend",
-    "start": "npm start --prefix backend"
+    "start": "npm start --prefix backend",
+    "deploy": "npm run build && wrangler deploy",
+    "preview": "npm run build && wrangler dev"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "wrangler": "^4.120.1"
   }
 }

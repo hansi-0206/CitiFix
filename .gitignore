@@ -46,3 +46,8 @@ backend/uploads/
 
 # Gemini / AI config
 .gemini/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
