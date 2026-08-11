@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    "https://citifix-backend-spaj2mi6sq-el.a.run.app/api",
 });
 
 // Auto-attach JWT bearer tokens to all outgoing requests
