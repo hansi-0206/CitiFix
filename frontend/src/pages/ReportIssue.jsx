@@ -224,16 +224,6 @@ export default function ReportIssue() {
     }
   };
 
-  // Trigger AI Scan when description changes (debounce to prevent spamming)
-  useEffect(() => {
-    if (image && description.length > 5) {
-      const timer = setTimeout(() => {
-        triggerAIScan(image, description);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [description]);
-
   // Handle support upvoting for duplicates
   const handleSupportDuplicate = () => {
     if (duplicateWarning) {
@@ -389,7 +379,7 @@ export default function ReportIssue() {
                   type="file"
                   accept="image/*"
                   onChange={handleImageChange}
-                  disabled={isScanning || isSubmitting}
+                  disabled={isSubmitting}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 />
                 <Upload className="h-8 w-8 text-slate-400 mb-3" />
@@ -404,7 +394,7 @@ export default function ReportIssue() {
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                     <button
                       type="button"
-                      disabled={isScanning || isSubmitting}
+                      disabled={isSubmitting}
                       onClick={handleRemoveImage}
                       className="absolute top-2 right-2 bg-slate-950/80 hover:bg-slate-900 text-white rounded-lg p-1.5 text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -429,7 +419,7 @@ export default function ReportIssue() {
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Category</label>
                 <select
                   value={category}
-                  disabled={isScanning || isSubmitting}
+                  disabled={isSubmitting}
                   onChange={(e) => setCategory(e.target.value)}
                   className="block w-full px-4 py-3 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -448,7 +438,7 @@ export default function ReportIssue() {
                 <input
                   type="text"
                   value={title}
-                  disabled={isScanning || isSubmitting}
+                  disabled={isSubmitting}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Deep pothole near crossroads"
                   className="block w-full px-4 py-3 bg-white dark:bg-dark-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -461,7 +451,7 @@ export default function ReportIssue() {
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Description</label>
               <textarea
                 value={description}
-                disabled={isScanning || isSubmitting}
+                disabled={isSubmitting}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 required
@@ -479,7 +469,7 @@ export default function ReportIssue() {
                 </span>
                 <button
                   type="button"
-                  disabled={isScanning || isSubmitting}
+                  disabled={isSubmitting}
                   onClick={handleUseCurrentLocation}
                   className="px-3 py-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -492,7 +482,7 @@ export default function ReportIssue() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Location Spot</label>
                   <select
                     value={selectedSpot}
-                    disabled={isScanning || isSubmitting}
+                    disabled={isSubmitting}
                     onChange={handleSpotChange}
                     className="block w-full h-14 px-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -513,7 +503,7 @@ export default function ReportIssue() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      disabled={selectedSpot !== "spot-new" || isScanning || isSubmitting}
+                      disabled={selectedSpot !== "spot-new" || isSubmitting}
                       value={customLat}
                       onChange={(e) => setCustomLat(e.target.value)}
                       placeholder="Lat"
@@ -521,7 +511,7 @@ export default function ReportIssue() {
                     />
                     <input
                       type="text"
-                      disabled={selectedSpot !== "spot-new" || isScanning || isSubmitting}
+                      disabled={selectedSpot !== "spot-new" || isSubmitting}
                       value={customLng}
                       onChange={(e) => setCustomLng(e.target.value)}
                       placeholder="Lng"
@@ -535,7 +525,7 @@ export default function ReportIssue() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Address Details</label>
                 <input
                   type="text"
-                  disabled={selectedSpot !== "spot-new" || isScanning || isSubmitting}
+                  disabled={selectedSpot !== "spot-new" || isSubmitting}
                   value={customAddress}
                   onChange={(e) => setCustomAddress(e.target.value)}
                   placeholder="Street Address..."
