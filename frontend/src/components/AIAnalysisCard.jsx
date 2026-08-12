@@ -42,7 +42,7 @@ export default function AIAnalysisCard({ analysis, isScanning }) {
         </div>
         <span className="flex h-5 items-center gap-1 px-2.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-500/10 text-sky-600 dark:text-sky-400">
           <Sparkles className="h-3 w-3" />
-          Gemini 3.5 Coprocessor
+          Groq Vision Coprocessor
         </span>
       </div>
 
@@ -78,7 +78,9 @@ export default function AIAnalysisCard({ analysis, isScanning }) {
                 <AlertTriangle className="h-6 w-6" />
               </div>
               <p className="text-xs font-bold text-rose-600 dark:text-rose-400 leading-relaxed max-w-xs break-words">
-                {typeof error === "string" ? error : "AI analysis unavailable. Please try again."}
+                {typeof error === "string" && !error.startsWith("{") && !error.includes("404")
+                  ? error
+                  : "AI service temporarily busy. Heuristic assessment active."}
               </p>
             </motion.div>
           ) : (

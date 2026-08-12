@@ -736,7 +736,7 @@ export default function CommunityImpactDashboard() {
                         const issueStatus = linkedIssue?.status || activeWorkOrder.status;
                         const steps = [
                           { label: "Report Submitted", desc: "Your report has been successfully logged." },
-                          { label: "AI Analysis Completed", desc: "Vulnerability and priority analyzed by Gemini." },
+                          { label: "AI Analysis Completed", desc: "Vulnerability and priority analyzed by Groq AI." },
                           { label: "Work Order Created", desc: "Municipal dispatch work order created." },
                           { label: "Assigned to Department", desc: "Work order routed to department team." },
                           { label: "Repair In Progress", desc: "Crews dispatched and conducting repairs." },

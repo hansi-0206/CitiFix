@@ -60,7 +60,7 @@ export default function Landing() {
   const features = [
     {
       title: "AI Analysis Engine",
-      description: "Gemini models automatically extract categories, priority index, and recommend municipal dispatch targets.",
+      description: "Groq Vision models automatically extract categories, priority index, and recommend municipal dispatch targets.",
       icon: Brain
     },
     {

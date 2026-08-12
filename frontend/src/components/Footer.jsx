@@ -90,7 +90,7 @@ export default function Footer() {
             <span>Admin Control Panel (Demo mode active)</span>
           </div>
           <div className="flex items-center gap-1 mt-4 sm:mt-0">
-            <span>Powered by Gemini &amp; Antigravity</span>
+            <span>Powered by Groq AI &amp; Antigravity</span>
             <Heart className="h-3 w-3 text-rose-500 fill-rose-500" />
             <span>in standard workspace</span>
           </div>

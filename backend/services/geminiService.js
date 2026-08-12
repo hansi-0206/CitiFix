@@ -64,43 +64,76 @@ Rule:
 - If category is snapped high-voltage cables/short circuits/transformers, use "Utility Failures".
 - Severity must match: Low, Medium, High, or Critical.`;
 
-    // 2. Build user prompt string
+    // 2. Build prompt content (multimodal if image buffer is provided)
     const userPrompt = description && description.trim().length > 0 
       ? description 
       : "Civic incident report with attached photographic evidence showing road or infrastructure damage.";
     const promptText = promptTemplate.replace("{description}", userPrompt);
 
-    // 3. Call Groq completions API with supported fast model
-    console.log("Calling Groq completions API with llama-3.3-70b-versatile...");
+    const userContent = [];
+    userContent.push({
+      type: "text",
+      text: promptText,
+    });
+
+    if (fileBuffer && mimeType) {
+      const base64Data = fileBuffer.toString("base64");
+      userContent.push({
+        type: "image_url",
+        image_url: {
+          url: `data:${mimeType};base64,${base64Data}`,
+        },
+      });
+    }
+
+    // 3. Call Groq completions API with vision model (qwen/qwen3.6-27b) or fallback
+    const visionModel = process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
+    console.log(`Calling Groq completions API with vision model (${visionModel})...`);
     let responseText = null;
 
     try {
       const response = await groq.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
+        model: visionModel,
         messages: [
           {
             role: "user",
-            content: promptText,
+            content: userContent,
           },
         ],
         response_format: { type: "json_object" },
         temperature: 0.1,
       });
       responseText = response.choices[0]?.message?.content;
-    } catch (primaryError) {
-      console.warn("Primary model (llama-3.3-70b-versatile) failed, trying fallback llama-3.1-8b-instant:", primaryError.message);
-      const fallbackResponse = await groq.chat.completions.create({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          {
-            role: "user",
-            content: promptText,
-          },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-      });
-      responseText = fallbackResponse.choices[0]?.message?.content;
+    } catch (visionError) {
+      console.warn(`Vision model (${visionModel}) error: ${visionError.message}. Attempting text model fallback...`);
+      try {
+        const textFallbackResponse = await groq.chat.completions.create({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "user",
+              content: promptText,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1,
+        });
+        responseText = textFallbackResponse.choices[0]?.message?.content;
+      } catch (textError) {
+        console.warn("Text fallback (llama-3.3-70b-versatile) failed, attempting llama-3.1-8b-instant:", textError.message);
+        const fastFallbackResponse = await groq.chat.completions.create({
+          model: "llama-3.1-8b-instant",
+          messages: [
+            {
+              role: "user",
+              content: promptText,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.1,
+        });
+        responseText = fastFallbackResponse.choices[0]?.message?.content;
+      }
     }
 
     console.log("Raw Groq Response:", responseText);
