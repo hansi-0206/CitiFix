@@ -7,10 +7,15 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize the Groq SDK client exactly once at the top level
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+// Helper to get or initialize Groq SDK client safely without crashing at module load
+const getGroqClient = () => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    console.warn("[WARN] GROQ_API_KEY environment variable is not defined. Falling back to heuristic analysis.");
+    return null;
+  }
+  return new Groq({ apiKey });
+};
 
 export const analyzeIssueWithAI = async (description, fileBuffer = null, mimeType = null) => {
   try {
@@ -87,6 +92,11 @@ Rule:
     }
 
     // 3. Call Groq completions API with vision model (qwen/qwen3.6-27b) or fallback
+    const groq = getGroqClient();
+    if (!groq) {
+      return getFallbackAnalysis(description || "");
+    }
+
     const visionModel = process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
     console.log(`Calling Groq completions API with vision model (${visionModel})...`);
     let responseText = null;
