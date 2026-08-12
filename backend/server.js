@@ -8,9 +8,11 @@ import authRoutes from "./routes/authRoutes.js";
 import issueRoutes from "./routes/issueRoutes.js";
 import workOrderRoutes from "./routes/workOrderRoutes.js";
 
-// ==================== CONNECT DATABASE ====================
+// ==================== DATABASE ====================
 
 connectDB();
+
+// ==================== APP ====================
 
 const app = express();
 
@@ -45,7 +47,6 @@ app.use(
         new Error(`CORS policy: Origin ${origin} is not allowed`)
       );
     },
-
     credentials: true,
   })
 );
@@ -94,10 +95,7 @@ app.use((err, req, res, next) => {
 
   res.status(statusCode).json({
     message: err.message || "Internal Server Error",
-    stack:
-      process.env.NODE_ENV === "production"
-        ? null
-        : err.stack,
+    stack: process.env.NODE_ENV === "production" ? null : err.stack,
   });
 });
 
@@ -107,8 +105,7 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(
-    `CitiFix Backend running in ${
-      process.env.NODE_ENV || "development"
+    `CitiFix Backend running in ${process.env.NODE_ENV || "development"
     } mode on port ${PORT}`
   );
 });
