@@ -5,7 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function AIAnalysisCard({ analysis, isScanning }) {
   const { category, severity, priorityScore, confidence, action, summary, error } = analysis;
 
+  const isInvalid = analysis.isValidCivicIssue === false || analysis.category === "Invalid";
+
   const getSeverityBadgeColor = (sev) => {
+    if (isInvalid || sev === "N/A") {
+      return "bg-rose-500/10 text-rose-500 border border-rose-500/20";
+    }
     switch (sev?.toLowerCase()) {
       case "critical":
         return "bg-rose-500/10 text-rose-500 border border-rose-500/20";
@@ -19,6 +24,7 @@ export default function AIAnalysisCard({ analysis, isScanning }) {
   };
 
   const getPriorityColor = (score) => {
+    if (isInvalid) return "text-slate-400 dark:text-slate-600";
     if (score >= 90) return "text-rose-500";
     if (score >= 70) return "text-amber-500";
     return "text-sky-500";
@@ -96,25 +102,27 @@ export default function AIAnalysisCard({ analysis, isScanning }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Suggested Category</span>
-                  <p className="text-sm font-extrabold text-slate-900 dark:text-white">{category || "Unclassified"}</p>
+                  <p className={`text-sm font-extrabold ${isInvalid ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-white"}`}>
+                    {isInvalid ? "Invalid Report" : (category || "Unclassified")}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Severity Level</span>
                   <div>
                     <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${getSeverityBadgeColor(severity)}`}>
-                      {severity || "Pending"}
+                      {isInvalid ? "N/A" : (severity || "Pending")}
                     </span>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priority Score</span>
                   <p className={`text-xl font-display font-black leading-none ${getPriorityColor(priorityScore)}`}>
-                    {priorityScore || "--"}/100
+                    {isInvalid ? "0/100" : `${priorityScore || "--"}/100`}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Confidence Level</span>
-                  <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                  <p className={`text-sm font-extrabold ${isInvalid ? "text-rose-500" : "text-emerald-600 dark:text-emerald-400"} flex items-center gap-0.5`}>
                     <Check className="h-3.5 w-3.5" />
                     {confidence || 0}%
                   </p>
@@ -122,12 +130,12 @@ export default function AIAnalysisCard({ analysis, isScanning }) {
               </div>
 
               {/* Recommended action */}
-              <div className="p-3 bg-slate-100/50 dark:bg-slate-800/40 rounded-xl space-y-1 border border-slate-100 dark:border-slate-800">
+              <div className={`p-3 rounded-xl space-y-1 border ${isInvalid ? "bg-rose-500/5 border-rose-500/20" : "bg-slate-100/50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800"}`}>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                  <ShieldAlert className="h-3 w-3 text-sky-500" />
+                  <ShieldAlert className={`h-3 w-3 ${isInvalid ? "text-rose-500" : "text-sky-500"}`} />
                   Recommended Action
                 </span>
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                <p className={`text-xs font-semibold ${isInvalid ? "text-rose-600 dark:text-rose-400" : "text-slate-800 dark:text-slate-200"}`}>
                   {action || "Inspection required to verify anomaly details."}
                 </p>
               </div>

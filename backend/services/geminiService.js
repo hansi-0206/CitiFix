@@ -19,60 +19,66 @@ const getGroqClient = () => {
 
 export const analyzeIssueWithAI = async (description, fileBuffer = null, mimeType = null) => {
   try {
-    // Define prompt template inline to optimize reasoning and enforce dynamic values
-    const promptTemplate = `You are an expert AI civic technician assisting municipal corporations in prioritizing local complaints.
-Analyze the user-reported civic issue described below and the attached photo (if available) to estimate prioritizing metrics dynamically.
+    // Define prompt template enforcing visual relevance check as step 1
+    const promptTemplate = `You are an expert AI civic technician assisting municipal corporations in analyzing and prioritizing citizen reports.
+Analyze the user-reported civic issue and the attached image (if provided) to classify the issue and evaluate its validity.
 
 User Description: 
 "{description}"
 
-CRITICAL INSTRUCTIONS FOR IMAGE INSPECTION:
-1. Carefully inspect the uploaded image. Estimate the severity and priority from visible evidence.
-2. Do not reuse previous outputs or default template values. Generate fresh, independent values for every image.
-3. Estimate the following variables from the image:
-   - Size of damage
-   - Visible affected area
-   - Safety risk
-   - Danger to pedestrians
-   - Danger to vehicles
-   - Urgency of resolution
-   - Public impact
-4. Compute the Priority Score (0–100) dynamically using this scale:
-   - 0–20: Cosmetic issues (e.g., paint peeling, minor debris, aesthetic wear)
+CRITICAL STEP 1 - VISUAL RELEVANCE & CIVIC VALIDITY ASSESSMENT:
+Inspect the attached image carefully:
+A. The image MUST show genuine, recognizable visual evidence of a public/civic infrastructure defect, municipal hazard, or community maintenance problem.
+   VALID CIVIC ISSUES include visible evidence of:
+   - Road & Sidewalk Damage: Potholes, broken asphalt, severe road cracks, damaged/collapsed pavement or sidewalks.
+   - Waste Management: Overflowing trash bins, illegal garbage dumps, street litter accumulation, clogged roadside drains.
+   - Streetlight Failures: Broken/dark streetlights, hanging lamps, damaged light poles.
+   - Water Supply: Burst municipal water pipes, active gushing leaks, flooded roadways from pipe bursts.
+   - Public Facilities: Damaged park benches, broken public playground equipment, broken fences/railings in public parks.
+   - Utility Failures: Snapped/sparking overhead high-voltage power cables, dangling wires over walkways, damaged electrical transformers.
+   *NOTE*: If a person or bystander is visible in the photo (e.g., pointing to or standing next to a pothole/damage), the report is STILL VALID as long as the civic defect is visible.
+
+B. REJECT UNRELATED / INVALID IMAGES:
+   If the image primarily shows any of the following with NO clear civic infrastructure defect:
+   - Selfies, personal portraits, human faces, fashion/clothing shots
+   - Memes, cartoon characters, digital art, software/app screenshots
+   - Food, meals, beverages, restaurant dishes
+   - Pets, domestic or wild animals
+   - Home interiors, private room furniture, indoor appliances
+   - Ordinary landscapes/nature without public municipal damage
+   - Documents, text receipts, product photos, unrelated objects
+   Then you MUST mark "isValidCivicIssue": false, "category": "Invalid", "severity": "N/A", "priorityScore": 0, "confidence": 90, "recommendedAction": "Upload a clear photo showing a civic infrastructure problem such as a pothole, garbage overflow, damaged streetlight, water leak, or blocked drain.", "summary": "The uploaded image does not appear to show a reportable civic infrastructure issue."
+
+CRITICAL STEP 2 - STRICT RULES AGAINST FALSE CLASSIFICATION:
+- NEVER classify an image as a civic category (such as "Road Damage" or "Waste Management") solely because the user text says "pothole" or "garbage". The image MUST provide visual evidence.
+- If the image is unrelated (e.g., a selfie, face, pet, meme, food, or screenshot), you MUST set "isValidCivicIssue": false and "category": "Invalid", even if the user text claims there is a pothole.
+
+CRITICAL STEP 3 - METRICS FOR VALID CIVIC ISSUES (when isValidCivicIssue is true):
+1. Compute Priority Score (0–100):
+   - 0–20: Cosmetic issues (e.g., paint peeling, minor debris)
    - 21–40: Minor issues (e.g., small cracks, minor bench wear)
    - 41–60: Moderate issues (e.g., medium pothole on a side road, single light out)
    - 61–80: Serious issues (e.g., large pothole on a main street, pile of trash blocking a sidewalk)
    - 81–100: Critical emergencies (e.g., active water main burst flooding street, snapped sparking high voltage wires hanging in walkways)
-   Choose a precise, logical score within these ranges based on the visual evidence.
-5. Compute the Confidence Level (50–100) based on image clarity:
-   - Blurry, low-resolution, dark, or obstructed images should receive a lower score (e.g., 50–65).
-   - Partially visible or cropped images should receive a moderate score (e.g., 66–80).
-   - Clear, high-resolution, well-lit, and well-framed images showing the full scale of the issue should receive a high score (e.g., 81–100).
-   Choose the value based entirely on image quality.
+2. Compute Confidence Level (50–100) based on visual clarity and certainty.
+3. Category must strictly be one of: "Road Damage", "Waste Management", "Streetlight Failures", "Water Supply", "Public Facilities", "Utility Failures".
+4. Severity must strictly be one of: "Low", "Medium", "High", "Critical".
 
-You must strictly output a valid JSON block and absolutely nothing else. Do not write explanations, markdown syntax wrapper tags (like \`\`\`json), or notes. The JSON must match the following schema:
+You must strictly output a valid JSON block and absolutely nothing else. Do not write markdown tags or extra explanations. The JSON must match the schema:
 {
-  "category": "Road Damage" | "Waste Management" | "Streetlight Failures" | "Water Supply" | "Public Facilities" | "Utility Failures",
-  "severity": "Low" | "Medium" | "High" | "Critical",
+  "isValidCivicIssue": true | false,
+  "category": "Road Damage" | "Waste Management" | "Streetlight Failures" | "Water Supply" | "Public Facilities" | "Utility Failures" | "Invalid",
+  "severity": "Low" | "Medium" | "High" | "Critical" | "N/A",
   "priorityScore": number,
   "confidence": number,
-  "recommendedAction": "string representing the immediate remediation action",
-  "summary": "string representing a professional, formal, single-sentence summary of the incident and immediate hazard threat"
-}
-
-Rule:
-- If category matches road potholes/cracks, use "Road Damage".
-- If category matches garbage/litter/clogged drains, use "Waste Management".
-- If category matches dark streets/broken bulbs, use "Streetlight Failures".
-- If category is water pipe burst/leak/flooding, use "Water Supply".
-- If category is broken park benches/fences/playgrounds, use "Public Facilities".
-- If category is snapped high-voltage cables/short circuits/transformers, use "Utility Failures".
-- Severity must match: Low, Medium, High, or Critical.`;
+  "recommendedAction": "string",
+  "summary": "string"
+}`;
 
     // 2. Build prompt content (multimodal if image buffer is provided)
     const userPrompt = description && description.trim().length > 0 
       ? description 
-      : "Civic incident report with attached photographic evidence showing road or infrastructure damage.";
+      : "Civic incident report with attached photographic evidence showing local infrastructure damage.";
     const promptText = promptTemplate.replace("{description}", userPrompt);
 
     const userContent = [];
@@ -161,7 +167,20 @@ Rule:
     // Parse AI output
     const parsedData = JSON.parse(cleanJsonString);
 
-    // Validate and sanitize schema attributes
+    // If marked invalid by AI
+    if (parsedData.isValidCivicIssue === false || parsedData.category?.toLowerCase() === "invalid") {
+      return {
+        isValidCivicIssue: false,
+        category: "Invalid",
+        severity: "N/A",
+        priorityScore: 0,
+        confidence: typeof parsedData.confidence === "number" ? Math.min(100, Math.max(0, Math.round(parsedData.confidence))) : 90,
+        recommendedAction: "Upload a clear photo showing a civic infrastructure problem such as a pothole, garbage overflow, damaged streetlight, water leak, or blocked drain.",
+        summary: parsedData.summary || "The uploaded image does not appear to show a reportable civic infrastructure issue."
+      };
+    }
+
+    // Validate and sanitize valid schema attributes
     const validCategories = [
       "Road Damage",
       "Waste Management",
@@ -177,6 +196,7 @@ Rule:
     }
 
     return {
+      isValidCivicIssue: true,
       category: finalCategory,
       severity: ["Low", "Medium", "High", "Critical"].includes(parsedData.severity) ? parsedData.severity : "Medium",
       priorityScore: typeof parsedData.priorityScore === "number" ? Math.min(100, Math.max(0, Math.round(parsedData.priorityScore))) : 65,
@@ -192,11 +212,25 @@ Rule:
 
 // Fallback logic in case of network/key failures
 const getFallbackAnalysis = (description) => {
-  const desc = description.toLowerCase();
+  const desc = (description || "").toLowerCase().trim();
+
+  if (!desc) {
+    return {
+      isValidCivicIssue: false,
+      category: "Invalid",
+      severity: "N/A",
+      priorityScore: 0,
+      confidence: 0,
+      recommendedAction: "Upload a clear photo of a civic infrastructure issue.",
+      summary: "AI analysis unavailable. Please provide a clear description and photo of the civic issue."
+    };
+  }
+
+  let isValidCivicIssue = true;
   let category = "Road Damage";
   let severity = "Medium";
   let priorityScore = 55;
-  let confidence = 85;
+  let confidence = 80;
   let recommendedAction = "Standard Road Maintenance Dispatch";
   let summary = "Road damage reported; repair recommended to avoid local traffic hazards.";
 
@@ -204,40 +238,50 @@ const getFallbackAnalysis = (description) => {
     category = "Waste Management";
     severity = desc.includes("vile") || desc.includes("hazardous") || desc.includes("foul") ? "High" : "Medium";
     priorityScore = severity === "High" ? 75 : 60;
-    confidence = 90;
+    confidence = 85;
     recommendedAction = "Sanitation Clearance Crew Dispatch";
     summary = "Solid waste overflow creating unhygienic conditions. Garbage clearance required.";
   } else if (desc.includes("light") || desc.includes("street-light") || desc.includes("dark") || desc.includes("bulb")) {
     category = "Streetlight Failures";
     severity = desc.includes("accident") || desc.includes("crime") ? "High" : "Medium";
     priorityScore = severity === "High" ? 80 : 65;
-    confidence = 92;
+    confidence = 85;
     recommendedAction = "Utility Grid Team Bulb Replacement";
     summary = "Broken streetlight array leading to dark pedestrian walkways. Fix lighting cables.";
   } else if (desc.includes("water") || desc.includes("leak") || desc.includes("pipe") || desc.includes("burst")) {
     category = "Water Supply";
     severity = desc.includes("flood") || desc.includes("burst") ? "Critical" : "High";
     priorityScore = severity === "Critical" ? 95 : 80;
-    confidence = 94;
+    confidence = 88;
     recommendedAction = "Emergency Valve Isolation & Plumbing Repair";
     summary = "Subsurface pipeline damage causing active water waste and minor flooding. Valves check requested.";
   } else if (desc.includes("wire") || desc.includes("spark") || desc.includes("transformer") || desc.includes("power")) {
     category = "Utility Failures";
     severity = desc.includes("dangling") || desc.includes("spark") ? "Critical" : "High";
     priorityScore = severity === "Critical" ? 99 : 85;
-    confidence = 96;
+    confidence = 90;
     recommendedAction = "Immediate Electrical Grid Shutdown & Rewiring";
     summary = "Snapped or sparking overhead power cable posing electric shock hazard. Immediate line isolation required.";
   } else if (desc.includes("park") || desc.includes("bench") || desc.includes("playground") || desc.includes("fence")) {
     category = "Public Facilities";
     severity = "Low";
     priorityScore = 40;
-    confidence = 88;
+    confidence = 80;
     recommendedAction = "Generic Maintenance Workorder";
     summary = "Minor public facility furniture damage. Scheduled for generic maintenance cycle.";
+  } else if (!desc.includes("pothole") && !desc.includes("road") && !desc.includes("crack")) {
+    // If not matching any civic keyword, safe invalid state
+    isValidCivicIssue = false;
+    category = "Invalid";
+    severity = "N/A";
+    priorityScore = 0;
+    confidence = 0;
+    recommendedAction = "Upload a clear photo of a civic infrastructure issue.";
+    summary: "The reported description does not clearly match a recognized civic infrastructure problem.";
   }
 
   return {
+    isValidCivicIssue,
     category,
     severity,
     priorityScore,

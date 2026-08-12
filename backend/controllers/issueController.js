@@ -3,6 +3,22 @@ import User from "../models/User.js";
 import { uploadToCloudinary } from "../middleware/uploadMiddleware.js";
 import { analyzeIssueWithAI } from "../services/geminiService.js";
 
+// Helper to calculate distance between coordinates in meters
+const calculateDistanceMeters = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3; // Earth radius in meters
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return Math.round(R * c);
+};
+
 // @desc    Check for duplicate reports within 100 meters
 // @route   POST /api/issues/check-duplicate
 // @access  Private
@@ -34,9 +50,14 @@ export const checkDuplicateIssue = async (req, res) => {
     const duplicate = await Issue.findOne(query).populate("reportedBy", "name points badge");
 
     if (duplicate) {
+      const dupLng = duplicate.location?.coordinates?.[0];
+      const dupLat = duplicate.location?.coordinates?.[1];
+      const distance = (dupLat != null && dupLng != null) ? calculateDistanceMeters(lat, lng, dupLat, dupLng) : 50;
+
       return res.json({
         duplicateFound: true,
         existingIssue: duplicate,
+        distance,
       });
     }
 
@@ -84,6 +105,7 @@ export const createIssue = async (req, res) => {
     longitude, 
     address, 
     bypassDuplicateCheck,
+    isValidCivicIssue,
     aiCategory,
     aiSeverity,
     aiPriorityScore,
@@ -140,10 +162,11 @@ export const createIssue = async (req, res) => {
     // 3. Upload image buffer to Cloudinary
     const imageUrl = await uploadToCloudinary(req.file.buffer);
 
-    // 4. Run Gemini AI classification on the uploaded file + description, or use pre-analyzed payload
+    // 4. Run AI classification on the uploaded file + description, or use pre-analyzed payload
     let aiInference;
     if (aiCategory && aiSeverity && aiPriorityScore) {
       aiInference = {
+        isValidCivicIssue: isValidCivicIssue === "true" || isValidCivicIssue === true || (aiCategory !== "Invalid"),
         category: aiCategory,
         severity: aiSeverity,
         priorityScore: parseInt(aiPriorityScore, 10),
@@ -157,6 +180,13 @@ export const createIssue = async (req, res) => {
         req.file.buffer,
         req.file.mimetype
       );
+    }
+
+    // Backend validation: reject invalid civic issue submissions
+    if (aiInference.isValidCivicIssue === false || aiInference.category === "Invalid") {
+      return res.status(400).json({
+        message: "Invalid civic issue image. Please upload an image showing a reportable civic infrastructure problem."
+      });
     }
 
     // 5. Save the issue report with nested AI attributes

@@ -256,6 +256,7 @@ export const AppProvider = ({ children }) => {
           description: dup.description,
           reportedBy: dup.reportedBy?.name || "Citizen",
           upvotes: dup.upvotes?.length || 0,
+          distance: data.distance != null ? data.distance : 50,
         };
       }
       return null;

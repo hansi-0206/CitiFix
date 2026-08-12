@@ -24,13 +24,14 @@ export default function ReportIssue() {
   const [imagePreview, setImagePreview] = useState("");
   const [selectedSpot, setSelectedSpot] = useState("spot-new");
   const [customAddress, setCustomAddress] = useState("45, High Street, Residency Road");
-  const [customLat, setCustomLat] = useState("12.9820");
-  const [customLng, setCustomLng] = useState("77.6150");
+  const [customLat, setCustomLat] = useState("12.9352");
+  const [customLng, setCustomLng] = useState("77.6245");
 
   // AI & Scanning State
   const [isScanning, setIsScanning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState({
+    isValidCivicIssue: null,
     category: "",
     severity: "",
     priorityScore: 0,
@@ -48,36 +49,36 @@ export default function ReportIssue() {
     "spot-bus": {
       name: "Central Bus Stand (Pothole area)",
       address: "Central Bus Stand Entrance, Main Arterial Rd",
-      lat: "12.9718",
-      lng: "77.5948"
+      lat: "12.9820",
+      lng: "77.6150"
     },
     "spot-sector7": {
-      name: "Sector 7 Crossroad (Garbage area)",
+      name: "Sector 7 Crossroad (Water Supply area)",
       address: "Crossroad 4, Sector 7, Green Glen Layout",
-      lat: "12.9786",
-      lng: "77.5914"
+      lat: "10.9569",
+      lng: "78.0802"
     },
     "spot-springs": {
       name: "Silver Springs Lane (Streetlight area)",
       address: "Parkside Walkway, Block C, Silver Springs",
-      lat: "12.9691",
-      lng: "77.6014"
+      lat: "10.9627",
+      lng: "78.0617"
     },
     "spot-mgroad": {
-      name: "MG Road Metro (High Voltage Wire area)",
+      name: "MG Road Metro (Utility Wire area)",
       address: "Opposite Metro Station Pillar 12, MG Road",
-      lat: "12.9733",
-      lng: "77.5983"
+      lat: "10.9627",
+      lng: "78.0618"
     },
     "spot-new": {
       name: "New Unreported Location",
       address: "45, High Street, Residency Road",
-      lat: "12.9820",
-      lng: "77.6150"
+      lat: "12.9352",
+      lng: "77.6245"
     }
   };
 
-  // Image Upload handler (Calls real Gemini AI API)
+  // Image Upload handler (Calls real Groq AI Vision API)
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -91,7 +92,22 @@ export default function ReportIssue() {
     }
   };
 
-  // Trigger Gemini AI analysis via Express backend
+  const handleRemoveImage = () => {
+    setImage(null);
+    setImagePreview("");
+    setAiAnalysis({
+      isValidCivicIssue: null,
+      category: "",
+      severity: "",
+      priorityScore: 0,
+      confidence: 0,
+      action: "",
+      summary: "",
+      error: false
+    });
+  };
+
+  // Trigger AI analysis via Express backend
   const triggerAIScan = async (currentImage = image, currentDescription = description) => {
     if (!currentImage) return;
 
@@ -106,8 +122,10 @@ export default function ReportIssue() {
       }
 
       const response = await analyzeIssue(scanData);
+      const isInvalid = response.isValidCivicIssue === false || response.category === "Invalid";
 
       setAiAnalysis({
+        isValidCivicIssue: !isInvalid,
         category: response.category || "",
         severity: response.severity || "",
         priorityScore: response.priorityScore || 0,
@@ -117,19 +135,20 @@ export default function ReportIssue() {
         error: false
       });
 
-      // Update dropdown selection dynamically with Gemini's category recommendation
-      if (response.category) {
+      // Update dropdown selection dynamically with recommendation if valid
+      if (!isInvalid && response.category && response.category !== "Invalid") {
         setCategory(response.category);
       }
     } catch (error) {
       console.error("AI Analysis failed:", error);
       setAiAnalysis({
-        category: "",
-        severity: "",
+        isValidCivicIssue: false,
+        category: "Invalid",
+        severity: "N/A",
         priorityScore: 0,
         confidence: 0,
-        action: "",
-        summary: "",
+        action: "Upload a clear photo showing a civic infrastructure issue.",
+        summary: "AI analysis unavailable. Please upload a clear photo of the issue.",
         error: error.message || "AI analysis unavailable. Please try again."
       });
     } finally {
@@ -236,6 +255,11 @@ export default function ReportIssue() {
     }
 
     try {
+      if (aiAnalysis.isValidCivicIssue === false || aiAnalysis.category === "Invalid") {
+        showToast("Please upload a valid civic issue photo to submit a report.");
+        return;
+      }
+
       setIsSubmitting(true);
       const formData = new FormData();
       formData.append("title", title || `${category} Anomaly`);
@@ -251,6 +275,7 @@ export default function ReportIssue() {
 
       // If AI scan succeeded, supply pre-analyzed values to skip re-classification on backend
       if (!aiAnalysis.error && aiAnalysis.category) {
+        formData.append("isValidCivicIssue", aiAnalysis.isValidCivicIssue ? "true" : "false");
         formData.append("aiCategory", aiAnalysis.category);
         formData.append("aiSeverity", aiAnalysis.severity);
         formData.append("aiPriorityScore", aiAnalysis.priorityScore);
@@ -267,6 +292,8 @@ export default function ReportIssue() {
       let friendlyMessage = error.message || "Failed to submit report. Please check backend log.";
       if (error.message?.includes("500") || error.message?.includes("Internal Server Error")) {
         friendlyMessage = "Something went wrong while submitting your report. Please try again.";
+      } else if (error.message?.includes("Invalid civic issue image")) {
+        friendlyMessage = "Invalid civic issue image. Please upload an image showing a reportable civic infrastructure problem.";
       } else if (error.message?.includes("api_key") || error.message?.includes("Cloudinary")) {
         friendlyMessage = "Image upload service is temporarily unavailable. Please try again in a few moments.";
       } else if (error.message?.includes("Network Error") || error.message?.includes("Network")) {
@@ -308,7 +335,7 @@ export default function ReportIssue() {
                     <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs font-extrabold text-slate-900 dark:text-white">
-                        Similar issue already reported 150m away!
+                        Similar issue already reported {duplicateWarning.distance ? `${duplicateWarning.distance}m` : "nearby"} away!
                       </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-lg">
                         We detected another unresolved <span className="font-bold text-sky-500">"{duplicateWarning.category}"</span> issue nearby reported by {duplicateWarning.reportedBy}.
@@ -322,6 +349,30 @@ export default function ReportIssue() {
                   >
                     Support existing report
                   </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Invalid Image Warning Banner */}
+          <AnimatePresence>
+            {aiAnalysis.isValidCivicIssue === false && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-extrabold text-rose-600 dark:text-rose-400">
+                      Invalid Image Detected
+                    </p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-350 mt-0.5 leading-relaxed">
+                      Please upload a photo showing a civic infrastructure problem such as a pothole, garbage overflow, damaged streetlight, water leak, blocked drain, or similar issue.
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -354,7 +405,7 @@ export default function ReportIssue() {
                     <button
                       type="button"
                       disabled={isScanning || isSubmitting}
-                      onClick={() => { setImage(null); setImagePreview(""); }}
+                      onClick={handleRemoveImage}
                       className="absolute top-2 right-2 bg-slate-950/80 hover:bg-slate-900 text-white rounded-lg p-1.5 text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Remove
@@ -507,37 +558,48 @@ export default function ReportIssue() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all text-sm text-center cursor-pointer"
+                    disabled={isScanning || isSubmitting || aiAnalysis.isValidCivicIssue === false}
+                    className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all text-sm text-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Report Anyway
                   </button>
                 </div>
-                
-                <button
-                  type="button"
-                  disabled
-                  className="w-full py-3 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 font-bold rounded-xl text-sm cursor-not-allowed border border-slate-350 dark:border-slate-750"
-                >
-                  Duplicate Found
-                </button>
+                {aiAnalysis.isValidCivicIssue === false && (
+                  <p className="text-[11px] text-rose-500 font-bold text-center">
+                    Upload a valid civic issue image to continue.
+                  </p>
+                )}
               </div>
             ) : (
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  disabled={isScanning || isSubmitting}
-                  onClick={() => navigate(-1)}
-                  className="flex-1 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isScanning || isSubmitting}
-                  className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md transition-all pt-3 pb-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  {isSubmitting ? "Submitting civic report..." : isScanning ? "AI is inspecting your report..." : "Submit Civic Ticket"}
-                </button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    disabled={isScanning || isSubmitting}
+                    onClick={() => navigate(-1)}
+                    className="flex-1 py-3 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isScanning || isSubmitting || aiAnalysis.isValidCivicIssue === false}
+                    className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-md transition-all pt-3 pb-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isSubmitting
+                      ? "Submitting civic report..."
+                      : isScanning
+                      ? "AI is inspecting your report..."
+                      : aiAnalysis.isValidCivicIssue === false
+                      ? "Upload Valid Image to Submit"
+                      : "Submit Civic Ticket"}
+                  </button>
+                </div>
+                {aiAnalysis.isValidCivicIssue === false && (
+                  <p className="text-[11px] text-rose-500 font-bold text-center">
+                    Upload a valid civic issue image to continue.
+                  </p>
+                )}
               </div>
             )}
           </div>
