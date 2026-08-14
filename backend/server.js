@@ -8,10 +8,6 @@ import authRoutes from "./routes/authRoutes.js";
 import issueRoutes from "./routes/issueRoutes.js";
 import workOrderRoutes from "./routes/workOrderRoutes.js";
 
-// ==================== DATABASE ====================
-
-connectDB();
-
 // ==================== APP ====================
 
 const app = express();
@@ -103,9 +99,27 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `CitiFix Backend running in ${process.env.NODE_ENV || "development"
-    } mode on port ${PORT}`
-  );
-});
+const startServer = async () => {
+  try {
+    console.log("Connecting to MongoDB...");
+
+    await connectDB();
+
+    console.log("MongoDB connection successful.");
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(
+        `CitiFix Backend running in ${
+          process.env.NODE_ENV || "development"
+        } mode on port ${PORT}`
+      );
+    });
+  } catch (error) {
+    console.error("Failed to start server because MongoDB connection failed.");
+    console.error(error);
+
+    process.exit(1);
+  }
+};
+
+startServer();

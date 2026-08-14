@@ -43,20 +43,23 @@ const seedAdminAndOfficer = async () => {
 };
 
 const connectDB = async () => {
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI is not defined");
+  }
+
   try {
-    if (!process.env.MONGODB_URI) {
-      console.warn("[WARN] MONGODB_URI environment variable is not defined. Database operations will be unavailable.");
-      return;
-    }
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 8000,
     });
+
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+
     await seedAdminAndOfficer();
+
+    return conn;
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
-    // Do NOT call process.exit(1) so that the HTTP server and Cloud Run health probes remain responsive
+    throw error;
   }
 };
-
 export default connectDB;
